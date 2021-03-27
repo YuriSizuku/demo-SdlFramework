@@ -1,7 +1,70 @@
 cmake_minimum_required(VERSION 3.5)
 project(SdlFramework)
 
+function(config_externlib TARGET_NAME)
+    # set extern lib path
+    set(EXTERN_LIB_DIR ${PROJECT_SOURCE_DIR}/externlib)
+    set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL-2.0.15-14858)
+    set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
+    set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.2.0)
+
+    # extern include
+    target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${SDL2_DIR}/include
+        ${GLM_DIR}/glm
+        ${GLEW_DIR}/include
+    )
+
+    # extern lib
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        if (${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
+            message("adding win64 libs...")
+            target_link_libraries(${TARGET_NAME} 
+            ${SDL2_DIR}/VisualC/x64/Release/SDL2.lib
+            ${SDL2_DIR}/VisualC/x64/Release/SDL2main.lib
+            opengl32.lib
+            )
+            find_library(GLEW_LIBRARY glew32s.lib ${GLEW_DIR}/lib/Release/x64)
+            if(GLEW_LIBRARY)
+                message(${GLEW_LIBRARY}" found!")
+                target_link_libraries(${TARGET_NAME} ${GLEW_LIBRARY})
+            endif() 
+
+            # install librarys
+            install(FILES 
+                ${SDL2_DIR}/VisualC/x64/Release/SDL2.dll 
+                DESTINATION ${CMAKE_BINARY_DIR}/Release)
+            install(FILES 
+                ${SDL2_DIR}/VisualC/x64/Release/SDL2.dll 
+                DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+        
+        else() # x86
+            message("adding win32 libs...")
+            target_link_libraries(${TARGET_NAME} 
+            ${SDL2_DIR}/VisualC/Win32/Release/SDL2.lib
+            ${SDL2_DIR}/VisualC/Win32/Release/SDL2main.lib
+            opengl32.lib
+            )
+            find_library(GLEW_LIBRARY glew32s.lib ${GLEW_DIR}/lib/Release/Win32)
+            if(GLEW_LIBRARY)
+                message(${GLEW_LIBRARY}" found!")
+                target_link_libraries(${TARGET_NAME} ${GLEW_LIBRARY})
+            endif() 
+
+            # install librarys
+            install(FILES 
+                ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
+                DESTINATION ${CMAKE_BINARY_DIR}/Release)
+            install(FILES 
+                ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
+                DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+        endif()
+    endif()
+endfunction()
+
 message("This is a simple sdl framework demo")
+set(CMAKE_CXX_STANDARD 11)
 set(DEMO_NAME demo)
 add_executable(${DEMO_NAME}
     src/demo.cpp
@@ -9,41 +72,9 @@ add_executable(${DEMO_NAME}
     src/sdl_util.c
     src/sdl_framework.hpp
     src/sdl_framework.cpp
-    src/gl_object.hpp
-    src/gl_object.cpp
+    src/sdl_object2d.hpp
+    src/sdl_object2d.cpp
+    src/gl_object3d.hpp
+    src/gl_object3d.cpp
 )
-
-# set extern lib path
-set(EXTERN_LIB_DIR ${PROJECT_SOURCE_DIR}/externlib)
-set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL-2.0.15-14858)
-set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
-set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.2.0)
-
-# extern include
-target_include_directories(${DEMO_NAME} PRIVATE
-    ${SDL2_DIR}/include
-    ${GLM_DIR}/glm
-    ${GLEW_DIR}/include
-)
-
-# extern lib
-if (WIN32)
-    target_link_libraries(${DEMO_NAME} 
-    ${SDL2_DIR}/VisualC/Win32/Release/SDL2.lib
-    ${SDL2_DIR}/VisualC/Win32/Release/SDL2main.lib
-    )
-    
-    find_library(GLEW_LIBRARY glew32s.lib ${GLEW_DIR}/lib/Release/Win32)
-    if(GLEW_LIBRARY)
-        message(${GLEW_LIBRARY}" found!")
-        target_link_libraries(${DEMO_NAME} ${GLEW_LIBRARY})
-    endif() 
-
-    # install librarys
-    install(FILES 
-        ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
-        DESTINATION ${CMAKE_BINARY_DIR}/Release)
-    install(FILES 
-        ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
-        DESTINATION ${CMAKE_BINARY_DIR}/Debug)
-endif()
+config_externlib(${DEMO_NAME})

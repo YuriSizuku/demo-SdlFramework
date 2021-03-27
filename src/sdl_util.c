@@ -1,3 +1,4 @@
+#include<string.h>
 #include "sdl_util.h"
 
 // texture and surface convert functions
@@ -57,9 +58,13 @@ int SaveSurface(SDL_Surface* pSurface, const char* path)
 	if (pSurface)
 	{
 		char* ext = strrchr((char*)path, (char)'.');
+#ifdef SDL_IMAGE_H_
 		if (!_stricmp(ext, ".png")) ret = IMG_SavePNG(pSurface, path);
-		else if (!_stricmp(ext, ".jpg")) ret = IMG_SaveJPG(pSurface, path, 90);
+		else if (!_stricmp(ext, ".jpg"))  ret = IMG_SaveJPG(pSurface, path, 90);
 		else ret = SDL_SaveBMP(pSurface, path);
+#else
+		ret = SDL_SaveBMP(pSurface, path);
+#endif
 	}
 	return ret;
 }
@@ -103,9 +108,13 @@ int SaveTextureStream(SDL_Texture* pTexture,
 	if (pSurface)
 	{
 		char* ext = strrchr((char*)path, (char)'.');
+#ifdef SDL_IMAGE_H_
 		if (!_stricmp(ext, ".png")) ret = IMG_SavePNG(pSurface, path);
-		else if (!_stricmp(ext, ".jpg")) ret = IMG_SaveJPG(pSurface, path, 90);
+		else if (!_stricmp(ext, ".jpg"))  ret = IMG_SaveJPG(pSurface, path, 90);
 		else ret = SDL_SaveBMP(pSurface, path);
+#else
+		ret = SDL_SaveBMP(pSurface, path);
+#endif
 	}
 	else
 	{
