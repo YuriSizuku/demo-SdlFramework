@@ -7,14 +7,15 @@ CStageSDL::~CStageSDL()
 
 }
 
-void CStageSDL::pushObjectSDL2D(CObject2DSDL* objectSDL2D)
+void CStageSDL::pushObject(void* object)
 {
-	m_pObjects2DSDL.push_back(objectSDL2D);
+	if (!m_appSDL.enableGl()) m_pObjects2DSDL.push_back(static_cast<CObject2DSDL*>(object));
+	else m_pSceneGL = static_cast<CSceneGL*>(object);
 }
 
-void CStageSDL::popObjectSDL2D()
+void CStageSDL::popObject()
 {
-	m_pObjects2DSDL.pop_back();
+	if(!m_appSDL.enableGl()) m_pObjects2DSDL.pop_back();
 }
 
 void CStageSDL::handleEvent(SDL_Event& event)
@@ -29,10 +30,19 @@ void CStageSDL::update()
 
 void CStageSDL::render()
 {
-	for (int i = 0; i < m_pObjects2DSDL.size(); i++)
+	if (!m_appSDL.enableGl())
 	{
-		m_pObjects2DSDL[i]->draw();
+		for (int i = 0; i < m_pObjects2DSDL.size(); i++)
+		{
+			m_pObjects2DSDL[i]->draw();
+		}
 	}
+	else
+	{
+		if (m_pSceneGL) m_pSceneGL->draw();
+		else SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::render can not render as m_pSceneGL is NULL");
+	}
+
 }
 /*CStageSDL end*/
 
@@ -274,9 +284,15 @@ void CAppSDL::run()
 	}
 }
 
-void CAppSDL::enableGl(bool enable)
+bool CAppSDL::enableGl()
+{
+	return m_enableGl;
+}
+
+bool CAppSDL::enableGl(bool enable)
 {
 	m_enableGl = enable;
+	return m_enableGl;
 }
 
 void CAppSDL::setFps(int fps)

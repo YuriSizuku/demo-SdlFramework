@@ -74,6 +74,8 @@ add_executable(${DEMO_NAME}
     src/sdl_framework.cpp
     src/sdl_object2d.hpp
     src/sdl_object2d.cpp
+    src/gl_util.h
+    src/gl_util.c
     src/gl_object3d.hpp
     src/gl_object3d.cpp
 )

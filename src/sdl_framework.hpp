@@ -27,18 +27,20 @@ class CObject2DSDL;
 class CAppSDL;
 
 // the stage contains multi object, define how object interacive in stage
+// inherit this class to add game logic
 // must use this class after prepare window
 class CStageSDL 
 {
 protected:
 	CAppSDL& m_appSDL;
-	vector<CObject2DSDL*> m_pObjects2DSDL; // the randering object
+	vector<CObject2DSDL*> m_pObjects2DSDL; // SDL randering objects
+	CSceneGL* m_pSceneGL=NULL; // GL rendering objects
 	map<string, void*> m_info; // the gloable information for updata
 public:
 	CStageSDL(CAppSDL& appSDL);
 	
-	void pushObjectSDL2D(CObject2DSDL* objectSDL2D);
-	void popObjectSDL2D();
+	void pushObject(void* object);
+	void popObject();
 	virtual ~CStageSDL();
 	virtual void handleEvent(SDL_Event& event);
 	virtual void update();
@@ -46,6 +48,7 @@ public:
 };
 
 // the overalall control of the app, such as change current stage
+// inherit this class to add game level change, such as menu
 class CStageManegerSDL 
 {
 protected:
@@ -105,7 +108,8 @@ public:
 	void run();
 	
 	// get or set app status
-	void enableGl(bool enable);
+	bool enableGl();
+	bool enableGl(bool enable);
 	void setFps(int fps);
 	void setBackground(Uint8 r, Uint8 g, Uint8 b);
 	SDL_Color& getBackground();
