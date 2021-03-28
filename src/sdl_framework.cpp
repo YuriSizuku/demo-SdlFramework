@@ -1,4 +1,80 @@
 #include "sdl_framework.hpp"
+/*CStageSDL start*/
+CStageSDL::CStageSDL(CAppSDL& appSDL):m_appSDL(appSDL) {}
+
+CStageSDL::~CStageSDL()
+{
+
+}
+
+void CStageSDL::pushObjectSDL2D(CObject2DSDL* objectSDL2D)
+{
+	m_pObjects2DSDL.push_back(objectSDL2D);
+}
+
+void CStageSDL::popObjectSDL2D()
+{
+	m_pObjects2DSDL.pop_back();
+}
+
+void CStageSDL::handleEvent(SDL_Event& event)
+{
+
+}
+
+void CStageSDL::update()
+{
+
+}
+
+void CStageSDL::render()
+{
+	for (int i = 0; i < m_pObjects2DSDL.size(); i++)
+	{
+		m_pObjects2DSDL[i]->draw();
+	}
+}
+/*CStageSDL end*/
+
+/*CStageManagerSDL start*/
+CStageManegerSDL::CStageManegerSDL(CAppSDL& appSDL) :m_appSDL(appSDL) 
+{
+	m_pCurStage = NULL;
+}
+
+CStageManegerSDL::~CStageManegerSDL()
+{
+
+}
+
+void CStageManegerSDL::pushStage(CStageSDL* stageSDL)
+{
+	m_pStages.push_back(stageSDL);
+	m_pCurStage = stageSDL;
+}
+
+void CStageManegerSDL::popStage()
+{
+	m_pStages.pop_back();
+	m_pCurStage = m_pStages.back();
+}
+
+void CStageManegerSDL::handleEvent(SDL_Event& event)
+{
+	m_pCurStage->handleEvent(event);
+}
+
+void CStageManegerSDL::update()
+{
+	m_pCurStage->update();
+}
+
+void CStageManegerSDL::render()
+{
+	m_pCurStage->render();
+}
+
+/*CStageManagerSDL end*/
 
 /*CAppSDL start*/
 CAppSDL::CAppSDL()
@@ -11,11 +87,11 @@ CAppSDL::CAppSDL()
 	m_lastRenderTicks = 0;
 	m_background = { 0,0,0,255 };
 	m_appStatus = APP_RUNNING;	
+	m_stageManager = NULL;
 }
 
 CAppSDL::~CAppSDL()
 {
-	m_pObjects2DSDL.clear();
 	releaseSDL();
 	releaseGL();
 }
@@ -81,24 +157,9 @@ void CAppSDL::prepareGL(SDL_GLContext glContext)
 	m_glContext = glContext;
 }
 
-void CAppSDL::pushObjectSDL2D(CObject2DSDL* object) 
-{ 
-	m_pObjects2DSDL.push_back(object); 
-}
-
-void CAppSDL::popObjectSDL2D() 
-{ 
-	m_pObjects2DSDL.pop_back(); 
-}
-
-vector<CObject2DSDL*>& CAppSDL::getObjects2DSDL()
+void CAppSDL::prepareStageManager(CStageManegerSDL* stageManger)
 {
-	return m_pObjects2DSDL;
-}
-
-map<string, void*>& CAppSDL::getInfoMap()
-{
-	return m_info;
+	m_stageManager = stageManger;
 }
 
 SDL_Window* CAppSDL::getWindow()
@@ -137,18 +198,12 @@ void CAppSDL::handleEvent(SDL_Event& event)
 		stop();
 		return;
 	}
-	for (size_t i = 0; i < m_pObjects2DSDL.size(); i++)
-	{
-		m_pObjects2DSDL[i]->handleEvent(event);
-	}
+	m_stageManager->handleEvent(event);
 }
 
 void CAppSDL::update()
 {
-	for (size_t i = 0; i < m_pObjects2DSDL.size(); i++)
-	{
-		m_pObjects2DSDL[i]->update();
-	}
+	m_stageManager->update();
 }
 
 void CAppSDL::render()
@@ -171,11 +226,7 @@ void CAppSDL::render()
 	}
 #endif
 	
-	// render all objects
-	for (size_t i = 0; i < m_pObjects2DSDL.size(); i++)
-	{
-		m_pObjects2DSDL[i]->render();
-	}
+	m_stageManager->render();
 
 	if (m_fps) // restrict the max fps
 	{
@@ -204,6 +255,11 @@ void CAppSDL::render()
 
 void CAppSDL::run()
 {
+	if (!m_stageManager)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "m_stageMander is NULL");
+		return;
+	}
 	while (m_appStatus!=APP_STOP)
 	{
 		SDL_Event event;
@@ -236,6 +292,11 @@ void CAppSDL::setBackground(Uint8 r, Uint8 g, Uint8 b)
 SDL_Color& CAppSDL::getBackground()
 {
 	return m_background;
+}
+
+map<string, void*>& CAppSDL::getGlobalInfo()
+{
+	return m_info;
 }
 
 void CAppSDL::pause() 

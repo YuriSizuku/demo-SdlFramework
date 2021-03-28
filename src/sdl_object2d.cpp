@@ -24,7 +24,7 @@ CCircleSDL::CCircleSDL(CAppSDL& appSDL):CObject2DSDL(appSDL)
 CCircleSDL::CCircleSDL(CAppSDL& appSDL, int radius, SDL_Color color):CObject2DSDL(appSDL)
 {
 	m_texture = NULL;
-	createCircle(radius, color);
+	create(radius, color);
 }
 
 CCircleSDL::~CCircleSDL()
@@ -41,7 +41,7 @@ void CCircleSDL::releaseTexture()
 	m_texture = NULL;
 }
 
-void CCircleSDL::createCircle(int radius, SDL_Color color, Uint32 format, Uint32 access)
+void CCircleSDL::create(int radius, SDL_Color color, Uint32 format, Uint32 access)
 {
 	releaseTexture();
 	m_renderRect = { 0,0,2 * radius, 2 * radius };
@@ -49,7 +49,7 @@ void CCircleSDL::createCircle(int radius, SDL_Color color, Uint32 format, Uint32
 	if (!m_texture)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
-			"In CCircleSDL::createCircle, SDL_CreateTexture failed, %s", SDL_GetError());
+			"In CCircleSDL::create, SDL_CreateTexture failed, %s", SDL_GetError());
 	}
 	SDL_SetTextureBlendMode(m_texture, SDL_BLENDMODE_BLEND);
 	m_color = color;
@@ -80,8 +80,6 @@ void CCircleSDL::createCircle(int radius, SDL_Color color, Uint32 format, Uint32
 
 void CCircleSDL::moveTo(int center_x, int center_y)
 {
-	int w,h;
-	SDL_GetWindowSize(getAppSDL().getWindow(), &w, &h);
 	m_renderRect.x = center_x - m_radius;
 	m_renderRect.y = center_y - m_radius;
 }
@@ -89,24 +87,5 @@ void CCircleSDL::moveTo(int center_x, int center_y)
 void CCircleSDL::draw()
 {
 	SDL_RenderCopy(getAppSDL().getRenderer(), m_texture, NULL, &m_renderRect);
-}
-
-void CCircleSDL::handleEvent(SDL_Event& event)
-{
-	//if (event.type != SDL_MOUSEMOTION) return;
-	//int x, y;
-	//SDL_GetMouseState(&x, &y);
-	//SDL_Log("%d %d", x, y);
-	//moveTo(x, y);
-}
-
-void CCircleSDL::update()
-{
-
-}
-
-void CCircleSDL::render()
-{
-	draw();
 }
 /*CCircleSDL end*/
