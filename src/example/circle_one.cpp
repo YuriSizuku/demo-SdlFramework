@@ -10,7 +10,7 @@ public:
 	CSimpleStage(CAppSDL& appSDL):CStageSDL(appSDL)
 	{
 		CCircleSDL* circle = new CCircleSDL(appSDL);
-		circle->create(30, { 100,100,100,255 });
+		circle->create(30, { 100,0,100,255 });
 		m_pObjects2DSDL.push_back(circle);
 	}
 
@@ -18,12 +18,12 @@ public:
 	{
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		m_pObjects2DSDL[0]->moveTo(x, y);
+		(*m_pObjects2DSDL.begin())->moveTo(x, y);
 	}
 
 	~CSimpleStage()
 	{
-		delete m_pObjects2DSDL[0];
+		delete *m_pObjects2DSDL.begin();
 	}
 };
 
@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
 	SDL_Log("This is a simle demo using sdl framework");
 
 	CAppSDL app;
-	app.prepareWindow("sdl demo", 800, 600);
+	app.prepareWindow("sdl circle demo", 800, 600);
 	app.prepareGL(); 
 	CStageManegerSDL simple_manager(app);
 	CSimpleStage simple_stage(app);

@@ -65,18 +65,45 @@ endfunction()
 
 message("This is a simple sdl framework demo")
 set(CMAKE_CXX_STANDARD 11)
-set(DEMO_NAME demo)
-add_executable(${DEMO_NAME}
-    src/demo.cpp
+set(SDL_FRAMEWORK_CODE
     src/sdl_util.h
     src/sdl_util.c
     src/sdl_framework.hpp
     src/sdl_framework.cpp
     src/sdl_object2d.hpp
-    src/sdl_object2d.cpp
+    src/sdl_object2d.cpp)
+set(GL_FRAMEWORK_CODE
     src/gl_util.h
     src/gl_util.c
     src/gl_object3d.hpp
-    src/gl_object3d.cpp
-)
+    src/gl_object3d.cpp)
+
+# simple circle
+set(DEMO_NAME circle_one)
+add_executable(${DEMO_NAME}
+    src/example/${DEMO_NAME}.cpp
+    ${SDL_FRAMEWORK_CODE}
+    ${GL_FRAMEWORK_CODE})
+target_include_directories(${DEMO_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+config_externlib(${DEMO_NAME})
+
+# circle collision
+set(DEMO_NAME circle_collision)
+add_executable(${DEMO_NAME}
+    src/example/${DEMO_NAME}.cpp
+    ${SDL_FRAMEWORK_CODE}
+    ${GL_FRAMEWORK_CODE})
+target_include_directories(${DEMO_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+config_externlib(${DEMO_NAME})
+
+# danmaku
+set(DEMO_NAME circle_danmaku)
+add_executable(${DEMO_NAME}
+    src/example/${DEMO_NAME}.cpp
+    ${SDL_FRAMEWORK_CODE}
+    ${GL_FRAMEWORK_CODE})
+target_include_directories(${DEMO_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})

@@ -1,3 +1,9 @@
+/*
+   A very simple sdl framework 
+   by devseed
+   v0.1
+*/
+
 #ifdef USE_OPENGL
 #define GLEW_STATIC
 #include<GL/glew.h>
@@ -33,7 +39,7 @@ class CStageSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	vector<CObject2DSDL*> m_pObjects2DSDL; // SDL randering objects
+	list<CObject2DSDL*> m_pObjects2DSDL; // SDL randering objects
 	CSceneGL* m_pSceneGL=NULL; // GL rendering objects
 	map<string, void*> m_info; // the gloable information for updata
 public:

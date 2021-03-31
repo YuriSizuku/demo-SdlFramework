@@ -32,9 +32,9 @@ void CStageSDL::render()
 {
 	if (!m_appSDL.enableGl())
 	{
-		for (int i = 0; i < m_pObjects2DSDL.size(); i++)
+		for (auto it=m_pObjects2DSDL.begin(); it!=m_pObjects2DSDL.end(); it++)
 		{
-			m_pObjects2DSDL[i]->draw();
+			(*it)->draw();
 		}
 	}
 	else
@@ -83,7 +83,6 @@ void CStageManegerSDL::render()
 {
 	m_pCurStage->render();
 }
-
 /*CStageManagerSDL end*/
 
 /*CAppSDL start*/
