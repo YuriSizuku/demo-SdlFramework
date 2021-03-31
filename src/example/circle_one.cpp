@@ -11,19 +11,19 @@ public:
 	{
 		CCircleSDL* circle = new CCircleSDL(appSDL);
 		circle->create(30, { 100,0,100,255 });
-		m_pObjects2DSDL.push_back(circle);
+		m_pObjectMap2DSDL[0].push_back(circle);
 	}
 
 	void handleEvent(SDL_Event& event)
 	{
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		(*m_pObjects2DSDL.begin())->moveTo(x, y);
+		(*(m_pObjectMap2DSDL[0].begin()))->moveTo(x, y);
 	}
 
 	~CSimpleStage()
 	{
-		delete *m_pObjects2DSDL.begin();
+		delete * m_pObjectMap2DSDL[0].begin();
 	}
 };
 

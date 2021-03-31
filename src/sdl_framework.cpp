@@ -7,15 +7,38 @@ CStageSDL::~CStageSDL()
 
 }
 
-void CStageSDL::pushObject(void* object)
+void CStageSDL::pushObject(void* object, int type)
 {
-	if (!m_appSDL.enableGl()) m_pObjects2DSDL.push_back(static_cast<CObject2DSDL*>(object));
-	else m_pSceneGL = static_cast<CSceneGL*>(object);
+	if (!m_appSDL.enableGl())
+	{
+		m_pObjectMap2DSDL[type].push_back(static_cast<CObject2DSDL*>(object));
+	}
+	else
+	{
+		m_pSceneGL = static_cast<CSceneGL*>(object);
+	}
 }
 
-void CStageSDL::popObject()
+void* CStageSDL::popObject(int type)
 {
-	if(!m_appSDL.enableGl()) m_pObjects2DSDL.pop_back();
+	if (!m_appSDL.enableGl())
+	{
+		auto p = *m_pObjectMap2DSDL[type].end();
+		m_pObjectMap2DSDL[type].pop_back();
+		return (void*)p;
+	}
+	return NULL;
+}
+
+void* CStageSDL::removeObject(list<CObject2DSDL*>::iterator& it, int type)
+{
+	if (!m_appSDL.enableGl())
+	{
+		auto p = *it;
+		it = m_pObjectMap2DSDL[type].erase(it);
+		return (void*)p;
+	}
+	return NULL;
 }
 
 void CStageSDL::handleEvent(SDL_Event& event)
@@ -32,9 +55,12 @@ void CStageSDL::render()
 {
 	if (!m_appSDL.enableGl())
 	{
-		for (auto it=m_pObjects2DSDL.begin(); it!=m_pObjects2DSDL.end(); it++)
+		for (auto it = m_pObjectMap2DSDL.begin(); it!=m_pObjectMap2DSDL.end();it++)
 		{
-			(*it)->draw();
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			{
+				(*it2)->draw();
+			}
 		}
 	}
 	else
@@ -237,17 +263,6 @@ void CAppSDL::render()
 	
 	m_stageManager->render();
 
-	if (m_fps) // restrict the max fps
-	{
-		Uint32 currentTicks = SDL_GetTicks();
-		Uint32 frame_interval = 1000 / m_fps;
-		Uint32 passed_interval = currentTicks - m_lastRenderTicks;
-		if (passed_interval < frame_interval)
-		{
-			SDL_Delay(frame_interval - passed_interval);
-		}
-	}
-
 	// show the render on screen
 	if (!m_enableGl)
 	{
@@ -259,7 +274,6 @@ void CAppSDL::render()
 		SDL_GL_SwapWindow(m_window);
 	}
 #endif
-	m_lastRenderTicks = SDL_GetTicks();
 }
 
 void CAppSDL::run()
@@ -280,6 +294,16 @@ void CAppSDL::run()
 		}
 		update();
 		render();
+		if (m_fps) // restrict the max fps
+		{
+			float frame_interval = 1000.f / m_fps;
+			Uint32 passed_interval = SDL_GetTicks() - m_lastRenderTicks;
+			if (passed_interval < frame_interval)
+			{
+				SDL_Delay(static_cast<Uint32>(round(frame_interval)) - passed_interval);
+			}
+		}
+		m_lastRenderTicks = SDL_GetTicks();
 	}
 }
 

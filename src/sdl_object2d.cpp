@@ -123,6 +123,8 @@ void CRagidSDL::rotateTo(float theta)
 /*CCircleSDL start*/
 CCircleSDL::CCircleSDL(CAppSDL& appSDL):CObject2DSDL(appSDL)
 {
+	m_color = { 0,0,0,0 };
+	m_radius = 0;
 	m_texture = NULL;
 }
 
@@ -155,6 +157,11 @@ void CCircleSDL::create(float radiusf, SDL_Color color, Uint32 format, Uint32 ac
 {
 	releaseTexture();
 	int radius = static_cast<int>(round(radiusf));
+	if (!radius)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CCircleSDL::create failed with radius 0");
+		return;
+	}
 	m_renderRect = { 0,0,2 * radius, 2 * radius };
 	m_texture = SDL_CreateTexture(m_appSDL.getRenderer(), format, access, 2 * radius, 2 * radius);
 	if (!m_texture)

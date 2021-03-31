@@ -13,6 +13,9 @@ protected:
 	CAppSDL& m_appSDL;
 	SDL_Rect m_renderRect;
 public:
+	int m_type;
+	int m_id;
+public:
 	CObject2DSDL(CAppSDL& appSDL);
 	void setAppSDL(CAppSDL& appSDL);
 	CAppSDL& getAppSDL();

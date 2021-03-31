@@ -60,6 +60,7 @@ private:
 	Uint32 m_lastUpate;	
 	CCircleSDL *m_pCirclePlayer, *m_pCircleEnemy, *m_pCircleBullet;
 	CCircleDanmaku* m_pPlayer;
+	list<CObject2DSDL*> m_pObjects2DSDL;
 public:
 	float m_radiusEnemy, m_radiusPlayer, m_radiusBullet;
 	int m_maxEnemy, m_randomEnemyPos;
@@ -102,7 +103,7 @@ public:
 		m_pPlayer = p;
 		p->m_id = 0;
 		p->m_type = PLAYER;
-		pushObject(p);
+		m_pObjects2DSDL.push_back(p);
 
 		// init enemy
 		srand((unsigned int)time(NULL));
@@ -138,8 +139,7 @@ public:
 			p->m_health = 1;
 			p->m_id = i + 1;
 			p->m_type = ENEMY;
-			pushObject(p);
-			
+			m_pObjects2DSDL.push_back(p);
 		}
 	}
 
@@ -301,6 +301,14 @@ public:
 			SDL_Log("in %dms, after collision, P=(%f %f), E=%f", SDL_GetTicks(), Px, Py, E);
 		}
 		m_lastUpate = SDL_GetTicks();
+	}
+
+	void render()
+	{
+		for (auto it = m_pObjects2DSDL.begin(); it != m_pObjects2DSDL.end(); it++)
+		{
+			(*it)->draw();
+		}
 	}
 
 	~CDanmakuStage()

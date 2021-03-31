@@ -9,7 +9,6 @@ function(config_externlib TARGET_NAME)
     set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.2.0)
 
     # extern include
-    target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
     target_include_directories(${TARGET_NAME} PRIVATE
         ${SDL2_DIR}/include
         ${GLM_DIR}/glm
@@ -18,6 +17,7 @@ function(config_externlib TARGET_NAME)
 
     # extern lib
     if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
         if (${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
             message("adding win64 libs...")
             target_link_libraries(${TARGET_NAME} 

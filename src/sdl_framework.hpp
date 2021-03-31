@@ -39,14 +39,15 @@ class CStageSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	list<CObject2DSDL*> m_pObjects2DSDL; // SDL randering objects
+	map<int, list<CObject2DSDL*>> m_pObjectMap2DSDL; // SDL randering objects
 	CSceneGL* m_pSceneGL=NULL; // GL rendering objects
 	map<string, void*> m_info; // the gloable information for updata
 public:
 	CStageSDL(CAppSDL& appSDL);
 	
-	void pushObject(void* object);
-	void popObject();
+	virtual void pushObject(void* object, int type=0);
+	virtual void* popObject(int type=0);
+	virtual void* removeObject(list<CObject2DSDL*>::iterator &it, int type = 0);
 	virtual ~CStageSDL();
 	virtual void handleEvent(SDL_Event& event);
 	virtual void update();
