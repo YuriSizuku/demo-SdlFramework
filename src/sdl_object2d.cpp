@@ -64,18 +64,18 @@ void CRagidSDL::predict_move(Uint32 interval, float* vx, float* vy,
 	}
 }
 
-void CRagidSDL::move(Uint32 interval, bool loopScreen)
+void CRagidSDL::move(Uint32 interval, bool loop)
 {
 	float  x, y, vx, vy;
-	predict_move(interval, &vx, &vy, &x, &y, loopScreen);
+	predict_move(interval, &vx, &vy, &x, &y, loop);
 	m_vx = vx; m_vy = vy;
 	moveTo(x, y);
 }
 
-void CRagidSDL::move(float dx, float dy, bool loopScreen)
+void CRagidSDL::move(float dx, float dy, bool loop)
 {
 	m_x += dx; m_y += dy;
-	if (!loopScreen) return;
+	if (!loop) return;
 
 	int screenW, screenH;
 	SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
@@ -97,14 +97,15 @@ void CRagidSDL::move(float dx, float dy, bool loopScreen)
 	}
 }
 
-void CRagidSDL::rotate(Uint32 interval)
+void CRagidSDL::rotate(Uint32 interval,  bool loop)
 {
-	rotate(static_cast<float>(m_omiga * static_cast<float>(interval) / 1000.f));
+	float dtheta = m_omiga * static_cast<float>(interval) / 1000.f;
+	rotate(dtheta, loop);
 }
 
-void CRagidSDL::rotate(float dtheta)
+void CRagidSDL::rotate(float dtheta, bool loop)
 {
-	m_theta += dtheta;
+	rotateTo(m_theta + dtheta, loop);
 }
 
 void CRagidSDL::moveTo(float x, float y)
@@ -114,8 +115,13 @@ void CRagidSDL::moveTo(float x, float y)
 	m_renderRect.y = static_cast<int>(round(y - m_renderRect.h/2.f));
 }
 
-void CRagidSDL::rotateTo(float theta)
+void CRagidSDL::rotateTo(float theta, bool loop)
 {
+	if (loop)
+	{
+		while (theta > M_PI) theta -= 2 * M_PI;
+		while (theta < -M_PI) theta += 2 * M_PI;
+	}
 	m_theta = theta;
 }
 /*CRagidSDL end*/

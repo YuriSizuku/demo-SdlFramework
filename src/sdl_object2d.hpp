@@ -39,12 +39,12 @@ public:
 	virtual ~CRagidSDL();
 	virtual void predict_move(Uint32 interval, float* vx, float* vy, 
 		float* x, float* y, bool loopScreen=true);
-	virtual void move(Uint32 interval, bool loopScreen=true);
-	virtual void move(float dx, float dy, bool loopScreen=true);
-	virtual void rotate(float dtheta);
-	virtual void rotate(Uint32 interval);
+	virtual void move(Uint32 interval, bool loop=true);
+	virtual void move(float dx, float dy, bool loop=true);
+	virtual void rotate(float dtheta, bool loop = true); // loop make -pi~pi
+	virtual void rotate(Uint32 interval, bool loop=true);
 	virtual void moveTo(float x, float y);
-	virtual void rotateTo(float theta);
+	virtual void rotateTo(float theta, bool loop=true);
 };
 
 class CCircleSDL: public CObject2DSDL

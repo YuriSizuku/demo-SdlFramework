@@ -114,6 +114,7 @@ void CStageManegerSDL::render()
 /*CAppSDL start*/
 CAppSDL::CAppSDL()
 {
+	m_bOutsideWindow = false;
 	m_window = NULL;
 	m_renderer = NULL;
 	m_glContext = NULL;
@@ -134,6 +135,7 @@ CAppSDL::~CAppSDL()
 void CAppSDL::prepareWindow(string title, int w, int h, Uint32 window_flag, Uint32 renderer_flag)
 {
 	releaseSDL();
+	m_bOutsideWindow = false;
 	m_window = SDL_CreateWindow(title.c_str(),
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		w, h, window_flag);
@@ -153,6 +155,7 @@ void CAppSDL::prepareWindow(string title, int w, int h, Uint32 window_flag, Uint
 void CAppSDL::prepareWindow(SDL_Window* window, SDL_Renderer *renderer)
 {
 	releaseSDL();
+	m_bOutsideWindow = true;
 	m_window = window;
 	m_renderer = renderer;
 }
@@ -214,8 +217,11 @@ SDL_GLContext& CAppSDL::getGLContext()
 
 void CAppSDL::releaseSDL()
 {
-	if (m_renderer) SDL_DestroyRenderer(m_renderer);
-	if (m_window) SDL_DestroyWindow(m_window);
+	if (!m_bOutsideWindow)
+	{
+		if (m_renderer) SDL_DestroyRenderer(m_renderer);
+		if (m_window) SDL_DestroyWindow(m_window);
+	}
 	m_renderer = NULL;
 	m_window = NULL;
 }

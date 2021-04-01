@@ -78,6 +78,7 @@ class CAppSDL
 {
 private:
 	Uint32 m_lastRenderTicks;
+	bool m_bOutsideWindow;
 protected:
 	SDL_Window* m_window; // for multi window
 	SDL_Renderer* m_renderer;
