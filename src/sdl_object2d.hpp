@@ -22,7 +22,7 @@ public:
 
 	virtual ~CObject2DSDL();
 	// the moving position should be float,for accumulate situations
-	virtual void moveTo(float x, float y) = 0; // x can be center point or left point
+	virtual void moveTo(float x, float y) =0; // x can be center point or left point
 	virtual void draw() = 0;
 };
 

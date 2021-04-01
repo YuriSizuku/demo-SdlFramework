@@ -119,8 +119,8 @@ void CRagidSDL::rotateTo(float theta, bool loop)
 {
 	if (loop)
 	{
-		while (theta > M_PI) theta -= 2 * M_PI;
-		while (theta < -M_PI) theta += 2 * M_PI;
+		while (theta > static_cast<float>(M_PI)) theta -= 2 * static_cast<float>(M_PI);
+		while (theta < static_cast<float>(-M_PI)) theta += 2 * static_cast<float>(M_PI);
 	}
 	m_theta = theta;
 }

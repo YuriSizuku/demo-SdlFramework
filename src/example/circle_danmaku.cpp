@@ -7,7 +7,8 @@
 enum CIRCLE_TYPE {
 	PLAYER,
 	ENEMY,
-	BULLENT
+	BULLENT,
+	HUD,
 };
 
 class CCircleDanmaku :public CRagidSDL // the basic circle of the obejct
@@ -19,12 +20,12 @@ public:
 	SDL_Texture* m_texture;
 	float m_r; // radius of circle
 	int m_health; // heath=0 show destory, health<0 delete object
-	int m_ownerType; // the bullet onwer, fire out by player or enemy
+	int m_ownerType, m_ownerID; // the bullet onwer, fire out by player or enemy
 
 	CCircleDanmaku(CAppSDL& appSDL, SDL_Texture* texture) : CRagidSDL(appSDL)
 	{
 		m_texture = texture;
-		m_destoryInterval = 200;
+		m_destoryInterval = 300;
 		m_ownerType = PLAYER;
 		m_r = 0; m_id = 0; m_health = 0;m_type = PLAYER;
 	}
@@ -103,6 +104,50 @@ public:
 	}
 };
 
+// show the HUD on screen and the information
+class CCircleHUD :public CObject2DSDL
+{
+private:
+	CCircleSDL *m_pTrueCircle, *m_pFalseCircle;
+public:
+	int m_health=0, m_totalHealth=3, m_defeated=0;
+	float m_radius;
+	CCircleHUD(CAppSDL& appsdl) : CObject2DSDL(appsdl)
+	{
+		int screenW, screenH;
+		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
+		m_radius = static_cast<float>(screenW) / 100;
+		m_pTrueCircle = new CCircleSDL(appsdl, m_radius, { 0,255,0,255 });
+		m_pFalseCircle = new CCircleSDL(appsdl, m_radius, { 255, 0,0, 255 });
+		moveTo(static_cast<float>(screenW - 4 * m_radius), static_cast<float>(2 * m_radius));
+	}
+
+	void draw()
+	{
+		SDL_Rect rect = { m_renderRect.x, m_renderRect.y,
+			static_cast <int>(2 * m_radius),  
+			static_cast <int>(2 * m_radius)};
+		for (int i = 0; i < m_totalHealth; i++)
+		{
+			auto texture = i < m_health ? m_pTrueCircle->getTexture() : m_pFalseCircle->getTexture();
+			rect.x = m_renderRect.x - static_cast<int>(i * 2 * m_radius);
+			SDL_RenderCopy(m_appSDL.getRenderer(), texture, NULL, &rect);
+		}
+	}
+
+	void moveTo(float rightx, float righty)
+	{
+		m_renderRect.x = static_cast<int>(rightx);
+		m_renderRect.y = static_cast<int>(righty);
+	}
+
+	~CCircleHUD()
+	{
+		delete m_pTrueCircle;
+		delete m_pFalseCircle;
+	}
+};
+
 class CDanmakuStage :public CStageSDL // the danmaku game code
 {
 private:
@@ -119,7 +164,7 @@ public:
 	CDanmakuStage(CAppSDL& appSDL) :CStageSDL(appSDL)
 	{
 		// init paramers
-		m_maxEnemy = 5;
+		m_maxEnemy = 20;
 		m_randomEnemyPos = false;
 		m_enemyFireInterval = 1000;
 		m_enemyFireRate = 1.f;
@@ -198,6 +243,8 @@ public:
 
 	void initObjects()
 	{
+		auto p = new CCircleHUD(m_appSDL);
+		pushObject(p, HUD);
 		initPlayers();
 		initEnemys();
 	}
@@ -276,9 +323,9 @@ public:
 	}
 
 	// fire a bullet from the object p
-	void fireBullet(CCircleDanmaku *p, int ownerType) 
+	void fireBullet(CCircleDanmaku *p) 
 	{
-		auto texture = ownerType == PLAYER ?
+		auto texture = p->m_type == PLAYER ?
 			m_pCircleBulletPlayer->getTexture() :
 			m_pCircleBulletEnemy->getTexture();
 		auto pb = new CCircleDanmaku(m_appSDL, texture);
@@ -290,7 +337,7 @@ public:
 		pb->m_y = p->m_y + (p->m_r + 1.1f * pb->m_r) * sin(p->m_theta);
 		pb->m_id = m_pObjectMap2DSDL[BULLENT].size() + 1;
 		pb->m_type = BULLENT;
-		pb->m_ownerType = ownerType;
+		pb->m_ownerType = p->m_type; pb->m_ownerID = p->m_ownerID;
 		pushObject(pb, BULLENT);
 	}
 
@@ -354,7 +401,7 @@ public:
 		    // fire a bullet
 			if (scancode == SDL_SCANCODE_SPACE)
 			{
-				fireBullet(pPlayer, PLAYER);
+				fireBullet(pPlayer);
 			}
 		}
 		pPlayer->m_vx = vx;
@@ -384,7 +431,7 @@ public:
 			if (fireFlag)
 			{
 				if(static_cast<float>(rand())/RAND_MAX <= m_enemyFireRate)
-					fireBullet(p1, ENEMY);
+					fireBullet(p1);
 			}
 
 			// check the enemy collision with each other or player
@@ -513,6 +560,13 @@ public:
 		updateEnemys(interval);
 		updatePlayers(interval);
 		updateBullets(interval);
+		// update HUD
+		if (m_pObjectMap2DSDL[HUD].size() > 0 && m_pObjectMap2DSDL[PLAYER].size())
+		{
+			auto pHud = static_cast<CCircleHUD*>(*(m_pObjectMap2DSDL[HUD].begin()));
+			auto pPlayer = static_cast<CCircleDanmaku*>(*(m_pObjectMap2DSDL[PLAYER].begin()));
+			pHud->m_health = pPlayer->m_health;
+		}
 		// remove the object whose health is below 0
 		removeDead(BULLENT);
 		removeDead(ENEMY);
