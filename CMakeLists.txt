@@ -71,7 +71,10 @@ set(SDL_FRAMEWORK_CODE
     src/sdl_framework.hpp
     src/sdl_framework.cpp
     src/sdl_object2d.hpp
-    src/sdl_object2d.cpp)
+    src/sdl_object2d.cpp
+    src/data_types.hpp
+    src/physics_object.hpp
+    src/physics_object.cpp)
 set(GL_FRAMEWORK_CODE
     src/gl_util.h
     src/gl_util.c

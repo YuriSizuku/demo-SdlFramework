@@ -2,7 +2,6 @@
 /*CObject2DSDL start*/
 CObject2DSDL::CObject2DSDL(CAppSDL& appSDL) : m_appSDL(appSDL) 
 {
-	m_renderRect = { 0,0,0,0 };
 }
 
 CObject2DSDL::~CObject2DSDL(){}
@@ -18,123 +17,76 @@ CAppSDL& CObject2DSDL::getAppSDL()
 }
 /*CObject2DSDL end*/
 
-/*CRagidSDL start*/
-CRagidSDL::CRagidSDL(CAppSDL& appSDL): CObject2DSDL(appSDL)
+/*CSingleTextureSDL start*/
+
+shared_ptr<SDL_Texture> CSingleTextureSDL::makeTexturePtr(SDL_Texture* texture)
 {
-	m_x = 0; m_y = 0; m_m = 1.f;
-	m_vx = 0.f; m_vy = 0.f; 
-	m_ax = 0.f; m_ay = 0.f;
-	m_theta = 0.f; m_omiga = 0.f;
+	return shared_ptr<SDL_Texture>(texture, [](SDL_Texture* texture) {SDL_DestroyTexture(texture); });
 }
 
-CRagidSDL::~CRagidSDL()
+CSingleTextureSDL::CSingleTextureSDL(CAppSDL& appSDL):CObject2DSDL(appSDL)
 {
 
 }
 
-void CRagidSDL::predict_move(Uint32 interval, float* vx, float* vy,
-	float* x, float* y, bool loopScreen)
+CSingleTextureSDL::CSingleTextureSDL(CAppSDL& appSDL, shared_ptr<SDL_Texture> texture) : CObject2DSDL(appSDL)
 {
-	*x = m_x;
-	*y = m_y;
-	*vx = m_vx + m_ax * interval / 1000.f;
-	*vy = m_vy + m_ay * interval / 1000.f;
-	float dx = m_vx * interval / 1000.f;
-	float dy = m_vy * interval / 1000.f;
-	*x += dx;*y += dy;
-	if (!loopScreen) return;
-
-	int screenW, screenH;
-	SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
-	while (*x > static_cast<float>(screenW))
-	{
-		*x -= static_cast<float>(screenW);
-	}
-	while (*x < 0.f)
-	{
-		*x += static_cast<float>(screenW);
-	}
-	while (*y > static_cast<float>(screenH))
-	{
-		*y -= static_cast<float>(screenH);
-	}
-	while (*y < 0.f)
-	{
-		*y += static_cast<float>(screenH);
-	}
+	setTexture(texture);
 }
 
-void CRagidSDL::move(Uint32 interval, bool loop)
+CSingleTextureSDL::~CSingleTextureSDL() {}
+
+shared_ptr<SDL_Texture> CSingleTextureSDL::getTexture()
 {
-	float  x, y, vx, vy;
-	predict_move(interval, &vx, &vy, &x, &y, loop);
-	m_vx = vx; m_vy = vy;
-	moveTo(x, y);
+	return m_texture;
 }
 
-void CRagidSDL::move(float dx, float dy, bool loop)
+void CSingleTextureSDL::setTexture(shared_ptr<SDL_Texture> texture)
 {
-	m_x += dx; m_y += dy;
-	if (!loop) return;
+	Uint32 format;
+	int access, w, h;
+	m_texture = texture;
+	SDL_QueryTexture(m_texture.get(), &format, &access, &w, &h);
+}
 
-	int screenW, screenH;
-	SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
-	while (m_x > static_cast<float>(screenW))
+void CSingleTextureSDL::moveTo(float center_x, float center_y)
+{
+	m_renderRect.x = static_cast<int>(round(center_x 
+		- static_cast<float>(m_renderRect.w)/2.f));
+	m_renderRect.y = static_cast<int>(round(center_y 
+		- static_cast<float>(m_renderRect.h)/2.f));
+}
+
+void CSingleTextureSDL::rotateTo(float theta)
+{
+	m_angle = theta * 180 / static_cast<float>(M_PI);
+}
+
+void CSingleTextureSDL::scaleTo(int w, int h)
+{
+	m_renderRect.w = w;
+	m_renderRect.h = h;
+}
+
+void CSingleTextureSDL::draw()
+{
+	if (m_texture == nullptr)
 	{
-		m_x -= static_cast<float>(screenW);
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CSingleTextureSDL::draw() texture is NULL");
 	}
-	while (m_x < 0.f)
-	{
-		m_x += static_cast<float>(screenW);
-	}
-	while (m_y > static_cast<float>(screenH))
-	{
-		m_y -= static_cast<float>(screenH);
-	}
-	while (m_y < 0.f)
-	{
-		m_y += static_cast<float>(screenH);
-	}
+	SDL_RenderCopyEx(m_appSDL.getRenderer(), m_texture.get(),
+		m_pSrcRect.get(), &m_renderRect, m_angle, m_pCenter.get(), flip);
 }
+/*CSingleTextureSDL end*/
 
-void CRagidSDL::rotate(Uint32 interval,  bool loop)
-{
-	float dtheta = m_omiga * static_cast<float>(interval) / 1000.f;
-	rotate(dtheta, loop);
-}
-
-void CRagidSDL::rotate(float dtheta, bool loop)
-{
-	rotateTo(m_theta + dtheta, loop);
-}
-
-void CRagidSDL::moveTo(float x, float y)
-{
-	m_x = x; m_y = y;
-	m_renderRect.x = static_cast<int>(round(x - m_renderRect.w/2.f));
-	m_renderRect.y = static_cast<int>(round(y - m_renderRect.h/2.f));
-}
-
-void CRagidSDL::rotateTo(float theta, bool loop)
-{
-	if (loop)
-	{
-		while (theta > static_cast<float>(M_PI)) theta -= 2 * static_cast<float>(M_PI);
-		while (theta < static_cast<float>(-M_PI)) theta += 2 * static_cast<float>(M_PI);
-	}
-	m_theta = theta;
-}
-/*CRagidSDL end*/
-
-/*CCircleSDL start*/
-CCircleSDL::CCircleSDL(CAppSDL& appSDL):CObject2DSDL(appSDL)
+CCircleSDL::CCircleSDL(CAppSDL& appSDL):CSingleTextureSDL(appSDL)
 {
 	m_color = { 0,0,0,0 };
-	m_radius = 0;
+	m_r = 0;
 	m_texture = NULL;
 }
 
-CCircleSDL::CCircleSDL(CAppSDL& appSDL, float radius, SDL_Color color):CObject2DSDL(appSDL)
+CCircleSDL::CCircleSDL(CAppSDL& appSDL, float radius, SDL_Color color):CSingleTextureSDL(appSDL)
 {
 	m_texture = NULL;
 	create(radius, color);
@@ -142,26 +94,11 @@ CCircleSDL::CCircleSDL(CAppSDL& appSDL, float radius, SDL_Color color):CObject2D
 
 CCircleSDL::~CCircleSDL()
 {
-	releaseTexture();
-}
 
-SDL_Texture* CCircleSDL::getTexture()
-{
-	return m_texture;
-}
-
-void CCircleSDL::releaseTexture()
-{
-	if (m_texture != NULL)
-	{
-		SDL_DestroyTexture(m_texture);
-	}
-	m_texture = NULL;
 }
 
 void CCircleSDL::create(float radiusf, SDL_Color color, Uint32 format, Uint32 access)
 {
-	releaseTexture();
 	int radius = static_cast<int>(round(radiusf));
 	if (!radius)
 	{
@@ -169,15 +106,16 @@ void CCircleSDL::create(float radiusf, SDL_Color color, Uint32 format, Uint32 ac
 		return;
 	}
 	m_renderRect = { 0,0,2 * radius, 2 * radius };
-	m_texture = SDL_CreateTexture(m_appSDL.getRenderer(), format, access, 2 * radius, 2 * radius);
+	SDL_Texture* texture = SDL_CreateTexture(m_appSDL.getRenderer(), format, access, 2 * radius, 2 * radius);
+	m_texture = makeTexturePtr(texture);
 	if (!m_texture)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
 			"In CCircleSDL::create, SDL_CreateTexture failed, %s", SDL_GetError());
 	}
-	SDL_SetTextureBlendMode(m_texture, SDL_BLENDMODE_BLEND);
+	SDL_SetTextureBlendMode(m_texture.get(), SDL_BLENDMODE_BLEND);
 	m_color = color;
-	m_radius = radiusf;
+	m_r = radiusf;
 
 	Uint8* buf = new Uint8[4 * 2 * radius * 2 * radius];
 	for (int x = 0; x < 2 * radius; x++)
@@ -198,18 +136,18 @@ void CCircleSDL::create(float radiusf, SDL_Color color, Uint32 format, Uint32 ac
 		}
 	}
 	
-	SDL_UpdateTexture(m_texture, &m_renderRect, buf, 4 * 2 * radius);
+	SDL_UpdateTexture(m_texture.get(), &m_renderRect, buf, 4 * 2 * radius);
 	delete[] buf;
 }
 
 void CCircleSDL::moveTo(float center_x, float center_y)
 {
-	m_renderRect.x = static_cast<int>(round(center_x - m_radius));
-	m_renderRect.y = static_cast<int>(round(center_y - m_radius));
+	m_renderRect.x = static_cast<int>(round(center_x - m_r));
+	m_renderRect.y = static_cast<int>(round(center_y - m_r));
 }
 
 void CCircleSDL::draw()
 {
-	SDL_RenderCopy(getAppSDL().getRenderer(), m_texture, NULL, &m_renderRect);
+	SDL_RenderCopy(getAppSDL().getRenderer(), m_texture.get(), NULL, &m_renderRect);
 }
 /*CCircleSDL end*/

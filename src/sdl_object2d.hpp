@@ -1,64 +1,69 @@
 /*
   simple wrapper of the SDL 2D object
-  by devseed
+  developed by devseed
   v0.1
 */
-
+#include <memory>
+using std::shared_ptr;
+using std::make_shared;
 #ifndef _SDL_OBJECT2D_H
 #define _SDL_OBJECT2D_H
 #include "sdl_framework.hpp"
+#include "physics_object.hpp"
 class CObject2DSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	SDL_Rect m_renderRect;
 public:
-	int m_type;
-	int m_id;
+	int m_type=0, m_id=0;
 public:
 	CObject2DSDL(CAppSDL& appSDL);
 	void setAppSDL(CAppSDL& appSDL);
 	CAppSDL& getAppSDL();
 
 	virtual ~CObject2DSDL();
-	// the moving position should be float,for accumulate situations
-	virtual void moveTo(float x, float y) =0; // x can be center point or left point
 	virtual void draw() = 0;
+	virtual void moveTo(float x, float y) = 0;
 };
 
-// ragid body object
-class CRagidSDL: public CObject2DSDL
+class CSingleTextureSDL : public CObject2DSDL
 {
+protected: 
+	shared_ptr<SDL_Texture> m_texture = nullptr;
 public:
-	float m_x, m_y, m_m; // the object position, mass
-	float m_vx, m_vy; // the object volocity, pixels in a second
-	float m_ax, m_ay; // the object accelerate volocity
-	float m_theta, m_omiga; // m_theta object angle, m_omiga angular speed
+	SDL_Rect m_renderRect = {0,0,0,0};
+	float m_angle = 0.f;
+	shared_ptr<SDL_Rect> m_pSrcRect = nullptr;
+	shared_ptr<SDL_Point> m_pCenter = nullptr;
+	SDL_RendererFlip flip = SDL_FLIP_NONE;
 public:
-	CRagidSDL(CAppSDL& appSDL);
-	virtual ~CRagidSDL();
-	virtual void predict_move(Uint32 interval, float* vx, float* vy, 
-		float* x, float* y, bool loopScreen=true);
-	virtual void move(Uint32 interval, bool loop=true);
-	virtual void move(float dx, float dy, bool loop=true);
-	virtual void rotate(float dtheta, bool loop = true); // loop make -pi~pi
-	virtual void rotate(Uint32 interval, bool loop=true);
-	virtual void moveTo(float x, float y);
-	virtual void rotateTo(float theta, bool loop=true);
+	static shared_ptr<SDL_Texture> makeTexturePtr(SDL_Texture* texture);
+public:
+	CSingleTextureSDL(CAppSDL& appSDL);
+	CSingleTextureSDL(CAppSDL& appSDL, shared_ptr<SDL_Texture> texture);
+	void setTexture(shared_ptr<SDL_Texture> texture);
+	shared_ptr<SDL_Texture> getTexture();
+
+	virtual ~CSingleTextureSDL();
+	
+	// the moving position should be float,for accumulate situations
+	// x can be center point or left point
+	virtual void moveTo(float center_x, float center_y); 
+	virtual void rotateTo(float theta);
+	virtual void scaleTo(int w, int h);
+	virtual void draw();
 };
 
-class CCircleSDL: public CObject2DSDL
+// simple circle in SDL, for static drawing
+class CCircleSDL: public CSingleTextureSDL
 {
 protected:
-	SDL_Texture* m_texture;
 	SDL_Color m_color;
-	float m_radius;
+	float m_r;
 public:
 	CCircleSDL(CAppSDL& appSDL);
 	CCircleSDL(CAppSDL& appSDL, float radius, SDL_Color color);
 	virtual ~CCircleSDL();
-	SDL_Texture *getTexture();
-	void releaseTexture();
 
 	void create(float radius, SDL_Color color,
 		Uint32 format= SDL_PIXELFORMAT_RGBA8888, 
@@ -66,5 +71,4 @@ public:
 	void moveTo(float center_x, float center_y);
 	void draw();
 };
-
 #endif

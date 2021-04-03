@@ -10,18 +10,21 @@ enum CIRCLE_TYPE{
 	BULLENT
 };
 
-class CCircleDanmaku :public CRagidSDL // the basic circle of the obejct
+class CCircleDanmaku :public CSingleTextureSDL, public CPhysicsRagidCircle // the basic circle of the obejct
 {
 public:
 	SDL_Texture* m_texture;
-	float m_r; // radius of circle
 	
 	int m_health;
 	int m_id;
 	CIRCLE_TYPE m_type;
 
-	CCircleDanmaku(CAppSDL& appSDL, SDL_Texture* texture): CRagidSDL(appSDL)
+	CCircleDanmaku(CAppSDL& appSDL, SDL_Texture* texture): CSingleTextureSDL(appSDL)
 	{
+		int screenW, screenH;
+		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
+		setScreen(screenW, screenH);
+
 		m_texture = texture;
 		
 		m_r = 0; 
@@ -52,6 +55,24 @@ public:
 		SDL_RenderDrawLine(m_appSDL.getRenderer(), x1, y1, x2+1, y2+1);
 		SDL_RenderDrawLine(m_appSDL.getRenderer(), x1, y1, x2-1, y2-1);
 	}
+
+	void move(Uint32 interval, bool loop = true)
+	{
+		CPhysicsRagidCircle::move(static_cast<float>(interval) / 1000.f, loop);
+		CSingleTextureSDL::moveTo(m_x, m_y);
+	}
+
+	void moveTo(float x, float y)
+	{
+		CPhysicsRagidCircle::moveTo(x, y);
+		CSingleTextureSDL::moveTo(x, y);
+	}
+
+	void rotateTo(float theta, bool loop = true)
+	{
+		CPhysicsRagidCircle::rotateTo(theta);
+	}
+
 };
 
 class CDanmakuStage :public CStageSDL // the danmaku game code
@@ -96,7 +117,7 @@ public:
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
 		
 		// init player
-		CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCirclePlayer->getTexture());
+		CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCirclePlayer->getTexture().get());
 		p->setRadius(m_radiusPlayer);
 		p->moveTo(static_cast<float>(screenW) / 2.f, static_cast<float>(screenH) / 2.f);
 		p->m_health = 3;
@@ -109,7 +130,7 @@ public:
 		srand((unsigned int)time(NULL));
 		for (int i = 0; i < m_maxEnemy; i++)
 		{
-			CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCircleEnemy->getTexture());
+			CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCircleEnemy->getTexture().get());
 			p->setRadius(m_radiusEnemy);
 			
 			float v=0.f, v_theta=0.f, x, y;
@@ -141,15 +162,6 @@ public:
 			p->m_type = ENEMY;
 			m_pObjects2DSDL.push_back(p);
 		}
-	}
-
-	void releaseObjects()
-	{
-		for (auto it = m_pObjects2DSDL.begin(); it != m_pObjects2DSDL.end(); it++)
-		{
-			delete* it;
-		}
-		m_pObjects2DSDL.clear();
 	}
 
 	bool checkCollision(CCircleDanmaku* p1, CCircleDanmaku* p2)
@@ -225,7 +237,7 @@ public:
 			// game restart
 			if (scancode == SDL_SCANCODE_R)
 			{
-				releaseObjects();
+				m_pObjects.releaseAllObjects();
 				initObjects();
 			}
 			// player move start
@@ -313,7 +325,7 @@ public:
 
 	~CDanmakuStage()
 	{
-		releaseObjects();
+		m_pObjects.releaseAllObjects();
 		delete m_pCirclePlayer, m_pCircleEnemy, m_pCircleBullet;
 	}
 };

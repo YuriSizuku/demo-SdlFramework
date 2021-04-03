@@ -15,6 +15,7 @@
 #include<list>
 #include<SDL.h>
 #include "sdl_object2d.hpp"
+#include "data_types.hpp"
 
 #ifndef _SDL_FRAMEWORK_H
 #define _SDL_FRAMEWORK_H
@@ -35,19 +36,14 @@ class CAppSDL;
 // the stage contains multi object, define how object interacive in stage
 // inherit this class to add game logic
 // must use this class after prepare window
+// if use gl, need to inherite this class
 class CStageSDL 
 {
 protected:
 	CAppSDL& m_appSDL;
-	map<int, list<CObject2DSDL*>> m_pObjectMap2DSDL; // SDL randering objects
-	CSceneGL* m_pSceneGL=NULL; // GL rendering objects
-	map<string, void*> m_info; // the gloable information for updata
+	CMapList<CObject2DSDL*> m_pObjects; // SDL randering objects
 public:
 	CStageSDL(CAppSDL& appSDL);
-	
-	virtual void pushObject(void* object, int type=0);
-	virtual void* popObject(int type=0);
-	virtual void* removeObject(list<CObject2DSDL*>::iterator &it, int type = 0);
 	virtual ~CStageSDL();
 	virtual void handleEvent(SDL_Event& event);
 	virtual void update();
