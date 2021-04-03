@@ -2,8 +2,18 @@
 #include<GL/glew.h>
 #include <SDL.h>
 #include <iostream>
+#include <math.h>
 #include "sdl_framework.hpp"
 #include "physics_object.hpp"
+
+#ifdef _WIN32
+#ifdef _DEBUG
+#include <crtdbg.h>
+#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
+#else
+#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
+#endif
 
 enum CIRCLE_TYPE {
 	PLAYER,
@@ -119,6 +129,11 @@ public:
 	{
 		CPhysicsRagidCircle::rotateTo(theta);
 	}
+
+	virtual ~CCircleDanmaku()
+	{
+
+	}
 };
 
 // show the HUD on screen and the information
@@ -169,25 +184,29 @@ public:
 class CDanmakuStage :public CStageSDL // the danmaku game code
 {
 private:
-	Uint32 m_lastUpateTicks;
-	Uint32 m_lastEnemyFireTicks;
+	int m_winFlag = 0;
+	Uint32 m_startTicks = 0, m_lastUpateTicks = 0;
+	Uint32 m_lastEnemyFireTicks = 0, m_lastAddEnemyTicks=0;
 	CCircleSDL *m_pCirclePlayer, *m_pCircleEnemy;
 	CCircleSDL *m_pCircleBulletPlayer, *m_pCircleBulletEnemy;
 public:
 	float m_radiusEnemy, m_radiusPlayer, m_radiusBullet;
 	int m_playerHealth;
-	int m_maxEnemy, m_randomEnemyPos;
+	int m_maxEnemy;
 	float m_enemyFireInterval, m_enemyFireRate;
 	float m_moveSpeed, m_bulletSpeed, m_rotateSpeed; // move angle in one step 
 public:
 	CDanmakuStage(CAppSDL& appSDL) :CStageSDL(appSDL)
 	{
 		// init paramers
-		m_maxEnemy = 20;
-		m_randomEnemyPos = false;
-		m_playerHealth = 3;
+		m_maxEnemy = 50;
+#ifdef _DEBUG
+		m_playerHealth = 5;
+#else
+		m_playerHealth = 5;
+#endif
 		m_enemyFireInterval = 1000;
-		m_enemyFireRate = 1.f;
+		m_enemyFireRate = 0.7f;
 		m_moveSpeed = 150.f; //pixel velocity in a second
 		m_bulletSpeed = 300.f;
 		m_rotateSpeed = static_cast<float>(30 * M_PI / 180);
@@ -199,9 +218,6 @@ public:
 		m_pCircleEnemy = new CCircleSDL(m_appSDL, m_radiusEnemy, { 0xff, 0x00, 0x00, 0xff });
 		m_pCircleBulletPlayer = new CCircleSDL(m_appSDL, m_radiusBullet, { 0xff, 0x00, 0xff, 0xff });
 		m_pCircleBulletEnemy = new CCircleSDL(m_appSDL, m_radiusBullet, { 0xff, 0xff, 0x00, 0xff });
-
-		m_lastUpateTicks = SDL_GetTicks();
-		m_lastEnemyFireTicks = SDL_GetTicks();
 	}
 
 	// init functions
@@ -213,7 +229,7 @@ public:
 		// init player
 		CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCirclePlayer->getTexture());
 		p->setRadius(m_radiusPlayer);
-		p->moveTo(static_cast<float>(screenW) / 2.f, static_cast<float>(screenH) / 2.f);
+		p->moveTo(static_cast<float>(screenW) / 4.f, static_cast<float>(screenH) / 2.f);
 		p->m_health = m_playerHealth;
 		p->m_id = 0;
 		p->m_type = PLAYER;
@@ -225,39 +241,15 @@ public:
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
 		srand((unsigned int)time(NULL));
 		rand();
-		for (int i = 0; i < m_maxEnemy; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCircleEnemy->getTexture());
-			p->setRadius(m_radiusEnemy);
-
-			float v = 0.f, v_theta = 0.f, x, y;
-			if (!m_randomEnemyPos)
-			{
-				//x = (i + 1) % int(sqrt(m_radiusEnemy)) * screenW / sqrt(m_radiusEnemy);
-				//y = (i + 1) / int(sqrt(m_radiusEnemy)) * screenH / sqrt(m_radiusEnemy);
-				x = screenW / 4.f;
-				y = screenH / 2.f;
-				v = m_moveSpeed;
-				v_theta = static_cast<float>((i + 1) * (360.f / m_maxEnemy) * M_PI / 180.f);
-			}
-			else
-			{
-				x = static_cast<float>(rand() * (static_cast<float>(screenW) / RAND_MAX));
-				y = static_cast<float>(rand() * (static_cast<float>(screenH) / RAND_MAX));
-				v = static_cast<float>(rand() * (m_moveSpeed / RAND_MAX));
-				v_theta = static_cast<float>(rand() * (2.f * M_PI / RAND_MAX));
-			}
-
+			float v = 0.f, vtheta = 0.f, x, y;
+			x = 0.75f * static_cast<float>(screenW);
+			y = 0.5f * static_cast<float>(screenH);
+			v = m_moveSpeed;
+			vtheta = static_cast<float>(rand() * (2.f * M_PI / RAND_MAX));
 			//SDL_Log("Init object %d, (%f, %f) v=%f v_theta=%f", i + 1, x, y, v, v_theta * 180.f / M_PI);
-			p->moveTo(x, y);
-			p->m_vx = v * cos(v_theta);
-			p->m_vy = v * sin(v_theta);
-			p->m_theta = v_theta;
-			p->m_omiga = static_cast<float>(M_PI / 2);
-			p->m_health = 1;
-			p->m_id = i + 1;
-			p->m_type = ENEMY;
-			m_pObjects.pushObject(p, ENEMY);
+			addEnemy(x, y, v, vtheta);
 		}
 	}
 	void initObjects()
@@ -267,6 +259,8 @@ public:
 		m_pObjects.pushObject(p, HUD);
 		initPlayers();
 		initEnemys();
+		m_startTicks = SDL_GetTicks();
+		m_winFlag = 0;
 	}
 
 	// fire a bullet from the object p
@@ -287,8 +281,103 @@ public:
 		pb->m_ownerType = p->m_type; pb->m_ownerID = p->m_ownerID;
 		m_pObjects.pushObject(pb, BULLENT);
 	}
+	void addEnemy(float x, float y, float v, float vtheta)
+	{
+		CCircleDanmaku* p = new CCircleDanmaku(m_appSDL, m_pCircleEnemy->getTexture());
+		p->setRadius(m_radiusEnemy);
+		p->moveTo(x, y);
+		p->m_vx = v * cos(vtheta);
+		p->m_vy = v * sin(vtheta);
+		p->m_theta = vtheta;
+		p->m_omiga = static_cast<float>(M_PI / 2);
+		p->m_health = 1;
+		p->m_id = m_pObjects.get()[ENEMY].size();
+		p->m_type = ENEMY;
+		m_pObjects.pushObject(p, ENEMY);
+	}
+
+	// game result
+	void onWin()
+	{
+		char title[100], message[256];
+		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD))->m_defeated;
+		SDL_snprintf(title, 100, "You Win!");
+		SDL_snprintf(message, 256, "Your defeated %d enemies.\n"
+			"Press R to restart\n"
+			"WASD to move, Space fire bullet, JK rotate", score);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
+	}
+
+	void onLose()
+	{
+		char title[100], message[256];
+		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD))->m_defeated;
+		SDL_snprintf(title, 100, "Game Over with score %d",  score);
+		SDL_snprintf(message, 256, "Your defeated %d enemies.\n"
+			"You need to survive 5min, and defeat all enemies\n"
+			"Press R to restart, WASD to move, Space fire bullet, JK rotate", score);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
+	}
 	
 	// update status functions
+	void checkGameStatus()
+	{
+		// check win lose
+		Uint32 currentTicks = SDL_GetTicks();
+		if (currentTicks -m_startTicks>= 300*1000  && m_winFlag==0)
+		{
+			onWin();
+			m_winFlag = 1;
+		}
+		bool onLoseFlag = false;
+		if (m_pObjects.get()[PLAYER].size() <= 0)
+		{
+			onLoseFlag = true;
+		}
+		else
+		{
+			auto p = static_cast<CCircleDanmaku*>(*m_pObjects.get()[PLAYER].begin());
+			if (p->m_health < 0) onLoseFlag = true;
+		}
+		
+		if (onLoseFlag && m_winFlag==0)
+		{
+			onLose();
+			m_winFlag = -1;
+		}
+
+		// check add enemy
+		Uint32 interval = currentTicks - m_lastAddEnemyTicks;
+		if (interval <= 3 * m_enemyFireInterval) return;
+		int maxUpdateEnemys = m_maxEnemy - m_pObjects.get()[ENEMY].size();
+		if (maxUpdateEnemys<=0) return;
+		int screenW, screenH;
+		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
+		
+		rand();
+		float rand_ratio = static_cast<float>(rand())/ RAND_MAX;
+		float time_ratio = 1.f + static_cast<float>(currentTicks - m_startTicks) / (1000.f*60.f);
+		float radio = 1.6f;
+		if (currentTicks - m_startTicks > 1000 * 30 
+			&& currentTicks - m_startTicks < 1000 * 180) radio = 2.f;
+		int n = static_cast<int>(time_ratio* rand_ratio* radio);
+#ifdef _DEBUG
+		SDL_Log("%f, %f, %d", rand_ratio, time_ratio, n);
+#endif 
+		for (int i = 0; i < static_cast<int>(fmin(n, maxUpdateEnemys)); i++)
+		{
+			float x, y, v, vtheta;
+			do
+			{
+				x = static_cast<float>(rand() * (static_cast<float>(screenW) / RAND_MAX));
+				y = static_cast<float>(rand() * (static_cast<float>(screenH) / RAND_MAX));
+			} while (x + y > 5.0f * (m_radiusEnemy + m_radiusPlayer));
+			v = m_moveSpeed * (0.5f + static_cast<float>(rand() * 0.5f / RAND_MAX));
+			vtheta = static_cast<float>(rand() * (2.f * M_PI / RAND_MAX));
+			addEnemy(x, y, v, vtheta);
+		}
+		m_lastAddEnemyTicks = SDL_GetTicks();
+	}
 	void updateEnemys(Uint32 interval)
 	{
 		// check if enemy fire a bullet
@@ -305,7 +394,7 @@ public:
 		for (auto it = m_pObjects.get()[ENEMY].begin();
 			it != m_pObjects.get()[ENEMY].end(); it++)
 		{
-			auto p1 = static_cast<CCircleDanmaku*>(*it);
+			auto p1 = dynamic_cast<CCircleDanmaku*>(*it);
 			if (p1->m_health <= 0) continue;
 			p1->move(interval);
 			if (fireFlag)
@@ -317,7 +406,7 @@ public:
 			// check the enemy collision with each other or player
 			for (auto it2 = m_pObjects.get()[ENEMY].begin(); it2 != it; it2++)
 			{
-				auto p2 = static_cast<CCircleDanmaku*>(*it2);
+				auto p2 = dynamic_cast<CCircleDanmaku*>(*it2);
 				if (p2->m_health <= 0) continue;
 				p1->doCollision(p2);
 			}
@@ -325,7 +414,7 @@ public:
 			for (auto it2 = m_pObjects.get()[PLAYER].begin(); 
 				it2 != m_pObjects.get()[PLAYER].end(); it2++)
 			{
-				auto p2 = static_cast<CCircleDanmaku*>(*it2);
+				auto p2 = dynamic_cast<CCircleDanmaku*>(*it2);
 				if (p2->m_health <= 0) continue;
 
 				// turn the theta to player
@@ -361,19 +450,12 @@ public:
 		for (auto it = m_pObjects.get()[PLAYER].begin();
 			it != m_pObjects.get()[PLAYER].end(); it++)
 		{
-			auto p1 = static_cast<CCircleDanmaku*>(*it);
-			if(p1->m_health<0)
-			{
-				char title[100], message[256];
-				SDL_snprintf(title, 100, "Player %d end with score %d", i+1, 1);
-				SDL_snprintf(message, 256, "Your defeated %d enemies.\nPress R to restart\nWASD to move, Space fire bullet, JK rotate", 0);
-				SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
-				continue;
-			}
+			auto p1 = dynamic_cast<CCircleDanmaku*>(*it);
+			if (p1->m_health < 0) return;
 			p1->move(interval);
 			for (auto it2 = m_pObjects.get()[PLAYER].begin(); it2 != it; it2++)
 			{
-				auto p2 = static_cast<CCircleDanmaku*>(*it2);
+				auto p2 = dynamic_cast<CCircleDanmaku*>(*it2);
 				p1->doCollision(p2);
 			}
 			i++;
@@ -386,7 +468,7 @@ public:
 		for (auto it = m_pObjects.get()[BULLENT].begin();
 			it != m_pObjects.get()[BULLENT].end(); it++)
 		{
-			auto p1 = static_cast<CCircleDanmaku*>(*it);
+			auto p1 = dynamic_cast<CCircleDanmaku*>(*it);
 			if (p1->m_health <= 0) continue;
 			p1->move(interval, false);
 			
@@ -408,6 +490,7 @@ public:
 					{
 						p1->m_health=0;
 						p2->m_health--;
+						dynamic_cast<CCircleHUD*>(m_pObjects.atObject(p1->m_ownerID, HUD))->m_defeated++;
 					}
 				}
 			}
@@ -415,7 +498,7 @@ public:
 			// check bullet collision with player
 			for (auto it2 = m_pObjects.get()[PLAYER].begin(); it2 != m_pObjects.get()[PLAYER].end(); it2++)
 			{
-				auto p2 = static_cast<CCircleDanmaku*>(*it2);
+				auto p2 = dynamic_cast<CCircleDanmaku*>(*it2);
 				if (p2->m_health <= 0) continue;
 				if (p1->checkCollision(p2))
 				{
@@ -432,7 +515,7 @@ public:
 			auto p = static_cast<CCircleDanmaku*>(*it);
 			if (p->m_health < 0)
 			{
-				delete m_pObjects.removeObject(it, type);
+				delete dynamic_cast<CCircleDanmaku*> (m_pObjects.removeObject(it, type));
 			}
 			else
 			{
@@ -444,13 +527,23 @@ public:
 	// event function and update functions
 	void handleEvent(SDL_Event& event)
 	{
+		if (event.type == SDL_QUIT)
+		{
+			m_winFlag ? onWin() : onLose();
+			return;
+		}
 		if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) return;
-		SDL_Scancode scancode = event.key.keysym.scancode;
 		
+		
+		SDL_Scancode scancode = event.key.keysym.scancode;
 		// game restart
 		if (scancode == SDL_SCANCODE_R) 
 		{
 			m_pObjects.releaseAllObjects();
+			//releaseAllObjects();
+#ifdef _DEBUG && _WIN32
+			//_CrtDumpMemoryLeaks();
+#endif
 			initObjects();
 			return;
 		}		
@@ -512,6 +605,7 @@ public:
 	void update()
 	{
 		Uint32 interval = SDL_GetTicks() - m_lastUpateTicks;
+		checkGameStatus();
 		// update position and velocity by collision
 		updateEnemys(interval);
 		updatePlayers(interval);
@@ -530,9 +624,24 @@ public:
 		m_lastUpateTicks = SDL_GetTicks();
 	}
 
+	void releaseAllObjects()
+	{
+		for (auto it = m_pObjects.get().begin(); it != m_pObjects.get().end(); it++)
+		{
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			{
+				auto p = dynamic_cast<CCircleDanmaku*>(*it2);
+				delete* it2;
+			}
+			(*it).second.clear();
+		}
+		m_pObjects.get().clear();
+	}
+
 	~CDanmakuStage()
 	{
 		m_pObjects.releaseAllObjects();
+		//releaseAllObjects();
 		delete m_pCirclePlayer, m_pCircleEnemy; 
 		delete m_pCircleBulletPlayer, m_pCircleBulletEnemy;
 	}

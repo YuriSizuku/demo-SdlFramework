@@ -197,12 +197,12 @@ void CAppSDL::releaseGL()
 
 void CAppSDL::handleEvent(SDL_Event& event)
 {
+	m_stageManager->handleEvent(event);
 	if (event.type == SDL_QUIT)
 	{
 		stop();
 		return;
 	}
-	m_stageManager->handleEvent(event);
 }
 
 void CAppSDL::update()

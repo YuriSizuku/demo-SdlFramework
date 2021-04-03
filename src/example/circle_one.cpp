@@ -18,7 +18,7 @@ public:
 	{
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		(*(m_pObjects.get()[0].begin()))->moveTo(x, y);
+		(*(m_pObjects.get()[0].begin()))->moveTo(static_cast<float>(x),  static_cast<float>(y));
 	}
 
 	~CSimpleStage()

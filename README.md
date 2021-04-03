@@ -30,3 +30,9 @@ A simulator for Perfect Elastic Collision, by conservation of momentum and energ
 ## circle Danmaku
 
 A Danmaku game whose object is all circle.
+
+The goal in this game is to survive more than 5 minutes, and defeat the enemy as much as possible.
+
+Press `R` to restart. `WASD` to move, `Space` fire bullet, `JK` rotate
+
+![circle_danmaku](screenshot/circle_danmaku.gif)

@@ -97,7 +97,7 @@ public:
 		{
 			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
 			{
-				delete *it2;
+				delete* it2;
 			}
 			(*it).second.clear();
 		}

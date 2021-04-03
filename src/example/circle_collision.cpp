@@ -184,7 +184,7 @@ public:
 		if (lc > dcenter) return false;
 		if (lc == 0.f)
 		{
-			p1->move(0.f, fmaxf(p1->m_r, p2->m_r));
+			p1->move(0, fmaxf(p1->m_r, p2->m_r));
 			return true;
 		};
 		cx /= lc; cy /= lc; // make normalized
