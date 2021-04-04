@@ -17,6 +17,29 @@ CAppSDL& CObject2DSDL::getAppSDL()
 }
 /*CObject2DSDL end*/
 
+/*CSceneSDL start*/
+CSceneSDL::CSceneSDL(CAppSDL& appSDL):m_appSDL(appSDL)
+{
+
+}
+
+CSceneSDL::~CSceneSDL()
+{
+
+}
+
+void CSceneSDL::render()
+{
+	for (auto it = m_pObjects.get().begin(); it != m_pObjects.get().end(); it++)
+	{
+		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+		{
+			(*it2)->draw();
+		}
+	}
+}
+/*CSceneSDL end*/
+
 /*CSingleTextureSDL start*/
 
 shared_ptr<SDL_Texture> CSingleTextureSDL::makeTexturePtr(SDL_Texture* texture)

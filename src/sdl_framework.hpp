@@ -31,19 +31,28 @@ enum AppStatus
 };
 
 class CObject2DSDL;
+class CSceneSDL;
 class CAppSDL;
 
-// the stage contains multi object, define how object interacive in stage
-// inherit this class to add game logic
+// the stage contains multi scenes, handles event
 // must use this class after prepare window
-// if use gl, need to inherite this class
 class CStageSDL 
 {
 protected:
 	CAppSDL& m_appSDL;
-	CMapList<CObject2DSDL*> m_pObjects; // SDL randering objects
+	vector<shared_ptr<CSceneSDL>> m_pScenesSDL;
+	void* m_pCurrentScene = nullptr;
+#ifdef USE_OPENGL
+	vector<shared_ptr<CSceneGL>> m_pScenesGL;
+#endif
 public:
 	CStageSDL(CAppSDL& appSDL);
+	void pushScene(shared_ptr<CSceneSDL> pScene);
+#ifdef USE_OPENGL
+	void pushScene(shared_ptr<CSceneGL> pScene);
+#endif
+	void popScene();
+	
 	virtual ~CStageSDL();
 	virtual void handleEvent(SDL_Event& event);
 	virtual void update();
@@ -56,11 +65,11 @@ class CStageManegerSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	CStageSDL* m_pCurStage;
-	vector<CStageSDL*> m_pStages;
+	CStageSDL* m_pCurrentStage=nullptr;
+	vector<shared_ptr<CStageSDL>> m_pStages;
 public:
 	CStageManegerSDL(CAppSDL& appSDL);
-	void pushStage(CStageSDL* stageSDL);
+	void pushStage(shared_ptr<CStageSDL> stageSDL);
 	void popStage();
 
 	virtual ~CStageManegerSDL();

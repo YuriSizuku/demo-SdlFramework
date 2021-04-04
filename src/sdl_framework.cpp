@@ -10,35 +10,100 @@ CStageSDL::~CStageSDL()
 
 }
 
+void CStageSDL::pushScene(shared_ptr<CSceneSDL> pScene)
+{
+	m_pScenesSDL.push_back(pScene);
+	m_pCurrentScene = m_pScenesSDL.back().get();
+}
+
+#ifdef USE_OPENGL
+void CStageSDL::pushScene(shared_ptr<CSceneGL> pScene)
+{
+	m_pScenesGL .push_back(pScene);
+	m_pCurrentScene = m_pScenesGL.back().get();
+}
+#endif
+
+void CStageSDL::popScene()
+{
+	if (!m_appSDL.enableGl())
+	{
+		m_pScenesSDL.pop_back();
+		m_pCurrentScene = m_pScenesSDL.back().get();
+	}
+#ifdef USE_OPENGL
+	else
+	{
+		m_pScenesGL.pop_back();
+		m_pCurrentScene = m_pScenesGL.back().get();
+	}
+#endif
+}
+
 void CStageSDL::handleEvent(SDL_Event& event)
 {
-
+	if (m_pCurrentScene == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::handleEvent scene is NULL");
+		return;
+	}
+	if (!m_appSDL.enableGl())
+	{
+		static_cast<CSceneSDL*>(m_pCurrentScene)->handleEvent(&event);
+	}
+#ifdef USE_OPENGL
+	else
+	{
+		static_cast<CSceneGL*>(m_pCurrentScene)->handleEvent(&event);
+	}
+#endif
 }
 
 void CStageSDL::update()
 {
-
+	Uint32 currentTicks = SDL_GetTicks();
+	if (m_pCurrentScene == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::update scene is NULL");
+		return;
+	}
+	if (!m_appSDL.enableGl())
+	{
+		static_cast<CSceneSDL*>(m_pCurrentScene)->update(currentTicks);
+	}
+#ifdef USE_OPENGL
+	else
+	{
+		static_cast<CSceneGL*>(m_pCurrentScene)->update(currentTicks);
+	}
+#endif
 }
 
 void CStageSDL::render()
 {
+	Uint32 currentTicks = SDL_GetTicks();
+	if (m_pCurrentScene == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::render scene is NULL");
+		return;
+	}
 	if (!m_appSDL.enableGl())
 	{
-		for (auto it = m_pObjects.get().begin(); it!= m_pObjects.get().end();it++)
-		{
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				(*it2)->draw();
-			}
-		}
+		static_cast<CSceneSDL*>(m_pCurrentScene)->render();
 	}
+#ifdef USE_OPENGL
+	else
+	{
+		static_cast<CSceneGL*>(m_pCurrentScene)->render();
+	}
+#endif
 }
 /*CStageSDL end*/
 
 /*CStageManagerSDL start*/
 CStageManegerSDL::CStageManegerSDL(CAppSDL& appSDL) :m_appSDL(appSDL) 
 {
-	m_pCurStage = NULL;
+
 }
 
 CStageManegerSDL::~CStageManegerSDL()
@@ -46,31 +111,46 @@ CStageManegerSDL::~CStageManegerSDL()
 
 }
 
-void CStageManegerSDL::pushStage(CStageSDL* stageSDL)
+void CStageManegerSDL::pushStage(shared_ptr<CStageSDL> stageSDL)
 {
 	m_pStages.push_back(stageSDL);
-	m_pCurStage = stageSDL;
+	m_pCurrentStage = stageSDL.get();
 }
 
 void CStageManegerSDL::popStage()
 {
 	m_pStages.pop_back();
-	m_pCurStage = m_pStages.back();
+	m_pCurrentStage = m_pStages.back().get();
 }
 
 void CStageManegerSDL::handleEvent(SDL_Event& event)
 {
-	m_pCurStage->handleEvent(event);
+	if (m_pCurrentStage == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::handleEvent stage is NULL");
+		return;
+	}
+	m_pCurrentStage->handleEvent(event);
 }
 
 void CStageManegerSDL::update()
 {
-	m_pCurStage->update();
+	if (m_pCurrentStage == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::update stage is NULL");
+		return;
+	}
+	m_pCurrentStage->update();
 }
 
 void CStageManegerSDL::render()
 {
-	m_pCurStage->render();
+	if (m_pCurrentStage == nullptr)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::render stage is NULL");
+		return;
+	}
+	m_pCurrentStage->render();
 }
 /*CStageManagerSDL end*/
 

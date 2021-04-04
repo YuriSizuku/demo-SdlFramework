@@ -15,7 +15,10 @@ class CObject2DSDL
 protected:
 	CAppSDL& m_appSDL;
 public:
-	int m_type=0, m_id=0;
+	int m_type=0, m_id=0, m_status=0;
+	// physical information pointer, can be iterator or object pointer
+	// also can inherit physical class other than use related pointer
+	void* m_pPhysicsRelated = NULL; 
 public:
 	CObject2DSDL(CAppSDL& appSDL);
 	void setAppSDL(CAppSDL& appSDL);
@@ -24,6 +27,17 @@ public:
 	virtual ~CObject2DSDL();
 	virtual void draw() = 0;
 	virtual void moveTo(float x, float y) = 0;
+};
+
+// A scene contains many objects and determine how objects interact with each other
+class CSceneSDL:public CScene<CMapList<CObject2DSDL*>>
+{
+protected:
+	CAppSDL& m_appSDL;
+public:
+	CSceneSDL(CAppSDL& appSDL);
+	virtual ~CSceneSDL();
+	virtual void render();
 };
 
 class CSingleTextureSDL : public CObject2DSDL

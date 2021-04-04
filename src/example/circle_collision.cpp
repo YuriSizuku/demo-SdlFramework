@@ -75,7 +75,7 @@ public:
 
 };
 
-class CDanmakuStage :public CStageSDL // the danmaku game code
+class CDanmakuScene :public CSceneSDL // the danmaku game code
 {
 private:
 	Uint32 m_lastUpate;	
@@ -87,7 +87,7 @@ public:
 	int m_maxEnemy, m_randomEnemyPos;
 	float m_moveSpeed, m_rotateSpeed; // move angle in one step 
 public:
-	CDanmakuStage(CAppSDL& appSDL) :CStageSDL(appSDL)
+	CDanmakuScene(CAppSDL& appSDL) :CSceneSDL(appSDL)
 	{
 		// init paramers
 		m_lastUpate = SDL_GetTicks();
@@ -276,6 +276,11 @@ public:
 		m_pPlayer->rotate(dtheta);
 	}
 
+	void handleEvent(void* event)
+	{
+		handleEvent(*static_cast<SDL_Event*>(event));
+	}
+
 	void update()
 	{
 		bool collision_flag = false;
@@ -315,6 +320,11 @@ public:
 		m_lastUpate = SDL_GetTicks();
 	}
 
+	void update(Uint32 currentTicks)
+	{
+		update();
+	}
+
 	void render()
 	{
 		for (auto it = m_pObjects2DSDL.begin(); it != m_pObjects2DSDL.end(); it++)
@@ -323,7 +333,7 @@ public:
 		}
 	}
 
-	~CDanmakuStage()
+	~CDanmakuScene()
 	{
 		m_pObjects.releaseAllObjects();
 		delete m_pCirclePlayer, m_pCircleEnemy, m_pCircleBullet;
@@ -337,8 +347,10 @@ int main(int argc, char* argv[])
 	app.prepareWindow("circle collision", 800, 600);
 	app.prepareGL();
 	CStageManegerSDL manager(app);
-	CDanmakuStage stage(app);
-	manager.pushStage((CStageSDL*)&stage);
+	auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
+	auto scene = shared_ptr<CDanmakuScene>(new CDanmakuScene(app));
+	stage->pushScene(scene);
+	manager.pushStage(stage);
 	
 	// init stage collision parameters
 	for (int i = 1; i < argc; i++)
@@ -347,26 +359,26 @@ int main(int argc, char* argv[])
 		switch (tolower(argv[i][1]))
 		{
 		case 'r':
-			stage.m_randomEnemyPos = true;
+			scene->m_randomEnemyPos = true;
 			break;
 		case 'n':
 			if (i + 1 > argc-1 && !isdigit(argv[i + 1][0]))
 			{
 				std::cout << "error: -n must append a number" << std::endl;
 			}
-			stage.m_maxEnemy = strtol(argv[i + 1], NULL, 10);
+			scene->m_maxEnemy = strtol(argv[i + 1], NULL, 10);
 			break;
 		case 'v':
 			if (i + 1 > argc - 1 && !isdigit(argv[i + 1][0]))
 			{
 				std::cout << "error: -v must append a number" << std::endl;
 			}
-			stage.m_moveSpeed = strtof(argv[i + 1], NULL);
+			scene->m_moveSpeed = strtof(argv[i + 1], NULL);
 			break;
 		}
 	}
 	
-	stage.initObjects();
+	scene->initObjects();
 	app.prepareStageManager(&manager);
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(144);

@@ -181,11 +181,11 @@ public:
 	}
 };
 
-class CDanmakuStage :public CStageSDL // the danmaku game code
+class CDanmakuScene :public CSceneSDL // the danmaku game code
 {
 private:
 	int m_winFlag = 0;
-	Uint32 m_startTicks = 0, m_lastUpateTicks = 0;
+	Uint32 m_startTicks = 0;
 	Uint32 m_lastEnemyFireTicks = 0, m_lastAddEnemyTicks=0;
 	CCircleSDL *m_pCirclePlayer, *m_pCircleEnemy;
 	CCircleSDL *m_pCircleBulletPlayer, *m_pCircleBulletEnemy;
@@ -196,7 +196,7 @@ public:
 	float m_enemyFireInterval, m_enemyFireRate;
 	float m_moveSpeed, m_bulletSpeed, m_rotateSpeed; // move angle in one step 
 public:
-	CDanmakuStage(CAppSDL& appSDL) :CStageSDL(appSDL)
+	CDanmakuScene(CAppSDL& appSDL) :CSceneSDL(appSDL)
 	{
 		// init paramers
 		m_maxEnemy = 50;
@@ -302,20 +302,19 @@ public:
 		char title[100], message[256];
 		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD))->m_defeated;
 		SDL_snprintf(title, 100, "You Win!");
-		SDL_snprintf(message, 256, "Your defeated %d enemies.\n"
+		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
 			"Press R to restart\n"
-			"WASD to move, Space fire bullet, JK rotate", score);
+			"WASD to move, Space fire bullet, JK rotate", score, (SDL_GetTicks()-m_startTicks)/1000);
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
 	}
-
 	void onLose()
 	{
 		char title[100], message[256];
 		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD))->m_defeated;
 		SDL_snprintf(title, 100, "Game Over with score %d",  score);
-		SDL_snprintf(message, 256, "Your defeated %d enemies.\n"
+		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
 			"You need to survive 5min, and defeat all enemies\n"
-			"Press R to restart, WASD to move, Space fire bullet, JK rotate", score);
+			"Press R to restart, WASD to move, Space fire bullet, JK rotate", score, (SDL_GetTicks() - m_startTicks) / 1000);
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
 	}
 	
@@ -357,9 +356,9 @@ public:
 		rand();
 		float rand_ratio = static_cast<float>(rand())/ RAND_MAX;
 		float time_ratio = 1.f + static_cast<float>(currentTicks - m_startTicks) / (1000.f*60.f);
-		float radio = 1.6f;
+		float radio = 1.4f;
 		if (currentTicks - m_startTicks > 1000 * 30 
-			&& currentTicks - m_startTicks < 1000 * 180) radio = 2.f;
+			&& currentTicks - m_startTicks < 1000 * 70) radio =2.f;
 		int n = static_cast<int>(time_ratio* rand_ratio* radio);
 #ifdef _DEBUG
 		SDL_Log("%f, %f, %d", rand_ratio, time_ratio, n);
@@ -525,23 +524,24 @@ public:
 	}
 
 	// event function and update functions
-	void handleEvent(SDL_Event& event)
+	void handleEvent(void *event)
 	{
-		if (event.type == SDL_QUIT)
+		auto eventSDL = static_cast<SDL_Event*>(event);
+		if (eventSDL->type == SDL_QUIT)
 		{
 			m_winFlag ? onWin() : onLose();
 			return;
 		}
-		if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) return;
+		if (eventSDL->type != SDL_KEYDOWN && eventSDL->type != SDL_KEYUP) return;
 		
 		
-		SDL_Scancode scancode = event.key.keysym.scancode;
+		SDL_Scancode scancode = eventSDL->key.keysym.scancode;
 		// game restart
 		if (scancode == SDL_SCANCODE_R) 
 		{
 			m_pObjects.releaseAllObjects();
 			//releaseAllObjects();
-#ifdef _DEBUG && _WIN32
+#ifdef _DEBUG && #ifdef_WIN32
 			//_CrtDumpMemoryLeaks();
 #endif
 			initObjects();
@@ -553,14 +553,15 @@ public:
 		auto pPlayer = static_cast<CCircleDanmaku*>(*m_pObjects.get()[PLAYER].begin());
 		if (!pPlayer)
 		{
-			SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CDanmakuStage::handleevent, pPlayer is NULL! ");
+			SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CDanmakuScene::handleevent, pPlayer is NULL! ");
 			return;
 		}
 	
 		// player control
 		int dx = 0, dy = 0;
 		float vx = pPlayer->m_vx, vy = pPlayer->m_vy, dtheta = 0.f;
-		if (event.type == SDL_KEYDOWN)
+		const Uint8* status = SDL_GetKeyboardState(NULL);
+		if (eventSDL->type == SDL_KEYDOWN)
 		{
 			// player move start
 			if (scancode == SDL_SCANCODE_W || scancode == SDL_SCANCODE_UP)
@@ -576,8 +577,7 @@ public:
 			if (scancode == SDL_SCANCODE_K)
 				dtheta = m_rotateSpeed;
 		}
-		const Uint8* status = SDL_GetKeyboardState(NULL);
-		if (event.type == SDL_KEYUP)
+		if (eventSDL->type == SDL_KEYUP)
 		{
 			// player move end
 			if (!status[SDL_SCANCODE_W] && !status[SDL_SCANCODE_UP] && vy < 0.f)
@@ -598,13 +598,15 @@ public:
 				fireBullet(pPlayer);
 			}
 		}
-		pPlayer->m_vx = vx;
-		pPlayer->m_vy = vy;
+		float vtheta = atan2(vy, vx);
+		float v = fabs(vx) + fabs(vy) != 0 ? 1.2*m_moveSpeed: 0.f;
+		pPlayer->m_vx = v * cos(vtheta);
+		pPlayer->m_vy = v * sin(vtheta);
 		pPlayer->rotateTo(pPlayer->m_theta + dtheta);
 	}
-	void update()
+	void update(Uint32 currentTicks)
 	{
-		Uint32 interval = SDL_GetTicks() - m_lastUpateTicks;
+		Uint32 interval = currentTicks - m_lastUpdateTicks;
 		checkGameStatus();
 		// update position and velocity by collision
 		updateEnemys(interval);
@@ -621,7 +623,7 @@ public:
 		removeDead(BULLENT);
 		removeDead(ENEMY);
 		removeDead(PLAYER);
-		m_lastUpateTicks = SDL_GetTicks();
+		m_lastUpdateTicks = SDL_GetTicks();
 	}
 
 	void releaseAllObjects()
@@ -638,7 +640,7 @@ public:
 		m_pObjects.get().clear();
 	}
 
-	~CDanmakuStage()
+	~CDanmakuScene()
 	{
 		m_pObjects.releaseAllObjects();
 		//releaseAllObjects();
@@ -653,12 +655,20 @@ int main(int argc, char* argv[])
 	app.prepareWindow("circle danmaku v1.0 by devseed", 800, 600);
 	app.prepareGL();
 	CStageManegerSDL manager(app);
-	CDanmakuStage stage(app);
-	manager.pushStage((CStageSDL*)&stage);
-	stage.initObjects();
+	auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
+	auto scene = shared_ptr<CDanmakuScene>(new CDanmakuScene(app));
+	stage->pushScene(scene);
+	manager.pushStage(stage);
+	scene->initObjects();
 	app.prepareStageManager(&manager);
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(144);
 	app.run();
+#ifdef _DEBUG
+	SDL_Log("game exit");
+#ifdef _WIN32
+	_CrtCheckMemory();
+#endif
+#endif
 	return 0;
 }

@@ -5,17 +5,17 @@ My simple SDL framework for rendering, updating and event handling.
 
 Currently the class is as below:
 
-`CApp`:  create window and renderer, contain the global information
+`CAppSDL`:  create window and renderer, contain the global information
 
-`CStageManager`: manage the game stage, a stage can be a level or menu,  define how to change stage here
+`CStageManagerSDL`: manage the game stage, a stage can be a level or menu,  define how to change stage here
 
-`CStage`:  The stage defines what objects in a level, and how the objects interactive with each other
+`CStageSDL`:  A stage contains many scenes in a level and handles the event if change scene.
 
-`CObject2DSDL`: The 2D object used for SDL rendering
+`CSceneSDL|CSceneGL`: A scene contains many objects and determine how objects interact with each other
 
-`CObject3DGL`: The 3D object  used for OpenGL rendering
+`CObject2DSDL|CObject3DGL`: A object used for SDL rendering or OpenGL rendering 
 
-`CPhsicalObject`: The object which contains physical information, used for physical engine
+`CPhsicalObject`: This object contains physical information, used for physical engine
 
 
 

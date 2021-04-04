@@ -21,6 +21,7 @@ class CPhysicsObject
 {
 public:
 	float m_m=1.f;// object mass
+	void* m_pRenderRelated=NULL; // the related object for drawing, can be iterator pointer or object pointer
 };
 
 class CPhysicsObject2D: public CPhysicsObject
