@@ -1,3 +1,4 @@
+#include <string.h>
 #include "sdl_object2d.hpp"
 /*CObject2DSDL start*/
 CObject2DSDL::CObject2DSDL(CAppSDL& appSDL) : m_appSDL(appSDL) 

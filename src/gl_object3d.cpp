@@ -23,4 +23,4 @@ void CSceneGL::render()
 }
 
 /*CSceneGL end*/
-#endif USE_OPENGL
+#endif

@@ -1,4 +1,8 @@
+#ifdef _LINUX
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #ifndef _SDL_UTIL_H
 #define _SDL_UTIL_H
 // texture and surface convert functions

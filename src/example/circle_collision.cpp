@@ -1,6 +1,12 @@
 #define GLEW_STATIC
 #include<GL/glew.h>
+#ifdef _LINUX
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
+#include <time.h>
+#include <stdlib.h>
 #include <iostream>
 #include "sdl_framework.hpp"
 
@@ -184,7 +190,7 @@ public:
 		if (lc > dcenter) return false;
 		if (lc == 0.f)
 		{
-			p1->move(0, fmaxf(p1->m_r, p2->m_r));
+			p1->moveTo(p1->m_x, p1->m_y + dcenter);
 			return true;
 		};
 		cx /= lc; cy /= lc; // make normalized

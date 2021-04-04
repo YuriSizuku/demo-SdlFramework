@@ -1,6 +1,10 @@
 #define GLEW_STATIC
 #include<GL/glew.h>
+#ifdef _LINUX
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #include <iostream>
 #include "sdl_framework.hpp"
 
@@ -51,6 +55,8 @@ int main(int argc, char * argv[])
 	app.setFps(60);
 	app.run();
 	SDL_Log("sdl end");
+#if defined(_WIN32) && defined(_DEBUG) 
 	_CrtCheckMemory();
+#endif
 	return 0;
 }

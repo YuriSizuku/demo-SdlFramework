@@ -13,7 +13,11 @@
 #include<vector>
 #include<map>
 #include<list>
-#include<SDL.h>
+#ifdef _LINUX
+#include <SDL2/SDL.h>
+#else
+#include <SDL.h>
+#endif
 #include "sdl_object2d.hpp"
 #include "data_types.hpp"
 

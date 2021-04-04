@@ -1,12 +1,18 @@
 #define GLEW_STATIC
 #include<GL/glew.h>
+#ifdef _LINUX
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #include <iostream>
 #include <math.h>
+#include <time.h>
+#include <stdlib.h>
 #include "sdl_framework.hpp"
 #include "physics_object.hpp"
 
-#ifdef _WIN32
+#if(defined(_WIN32) || defined(_WIN64))
 #ifdef _DEBUG
 #include <crtdbg.h>
 #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
@@ -276,7 +282,7 @@ public:
 		pb->m_vy = m_bulletSpeed * sin(p->m_theta);
 		pb->m_x = p->m_x + (p->m_r + 1.1f * pb->m_r) * cos(p->m_theta);
 		pb->m_y = p->m_y + (p->m_r + 1.1f * pb->m_r) * sin(p->m_theta);
-		pb->m_id = m_pObjects.get()[BULLENT].size() + 1;
+		pb->m_id = static_cast<int>(m_pObjects.get()[BULLENT].size() + 1);
 		pb->m_type = BULLENT;
 		pb->m_ownerType = p->m_type; pb->m_ownerID = p->m_ownerID;
 		m_pObjects.pushObject(pb, BULLENT);
@@ -291,7 +297,7 @@ public:
 		p->m_theta = vtheta;
 		p->m_omiga = static_cast<float>(M_PI / 2);
 		p->m_health = 1;
-		p->m_id = m_pObjects.get()[ENEMY].size();
+		p->m_id = static_cast<int>(m_pObjects.get()[ENEMY].size());
 		p->m_type = ENEMY;
 		m_pObjects.pushObject(p, ENEMY);
 	}
@@ -347,8 +353,9 @@ public:
 
 		// check add enemy
 		Uint32 interval = currentTicks - m_lastAddEnemyTicks;
-		if (interval <= 3 * m_enemyFireInterval) return;
-		int maxUpdateEnemys = m_maxEnemy - m_pObjects.get()[ENEMY].size();
+		if (interval <= 3 * m_enemyFireInterval && m_pObjects.get()[ENEMY].size()>0) return;
+		if (interval <= 1.5 * m_enemyFireInterval) return;
+		int maxUpdateEnemys = static_cast<int>(m_maxEnemy - m_pObjects.get()[ENEMY].size());
 		if (maxUpdateEnemys<=0) return;
 		int screenW, screenH;
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
@@ -541,8 +548,8 @@ public:
 		{
 			m_pObjects.releaseAllObjects();
 			//releaseAllObjects();
-#ifdef _DEBUG && #ifdef_WIN32
-			//_CrtDumpMemoryLeaks();
+#if  defined(_DEBUG) &&  defined(_WIN32)
+		//_CrtDumpMemoryLeaks();
 #endif
 			initObjects();
 			return;
@@ -599,7 +606,7 @@ public:
 			}
 		}
 		float vtheta = atan2(vy, vx);
-		float v = fabs(vx) + fabs(vy) != 0 ? 1.2*m_moveSpeed: 0.f;
+		float v = fabsf(vx) + fabsf(vy) != 0.f ? 1.2f*m_moveSpeed: 0.f;
 		pPlayer->m_vx = v * cos(vtheta);
 		pPlayer->m_vy = v * sin(vtheta);
 		pPlayer->rotateTo(pPlayer->m_theta + dtheta);

@@ -4,14 +4,14 @@ project(SdlFramework)
 function(config_externlib TARGET_NAME)
     # set extern lib path
     set(EXTERN_LIB_DIR ${PROJECT_SOURCE_DIR}/externlib)
-    set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL-2.0.15-14858)
+    set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL2-2.0.14)
     set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
-    set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.2.0)
+    set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
 
     # extern include
     target_include_directories(${TARGET_NAME} PRIVATE
         ${SDL2_DIR}/include
-        ${GLM_DIR}/glm
+        ${GLM_DIR}/
         ${GLEW_DIR}/include
     )
 
@@ -19,47 +19,47 @@ function(config_externlib TARGET_NAME)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
         if (${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
-            message("adding win64 libs...")
-            target_link_libraries(${TARGET_NAME} 
-            ${SDL2_DIR}/VisualC/x64/Release/SDL2.lib
-            ${SDL2_DIR}/VisualC/x64/Release/SDL2main.lib
-            opengl32.lib
-            )
-            find_library(GLEW_LIBRARY glew32s.lib ${GLEW_DIR}/lib/Release/x64)
-            if(GLEW_LIBRARY)
-                message(${GLEW_LIBRARY}" found!")
-                target_link_libraries(${TARGET_NAME} ${GLEW_LIBRARY})
-            endif() 
-
-            # install librarys
-            install(FILES 
-                ${SDL2_DIR}/VisualC/x64/Release/SDL2.dll 
-                DESTINATION ${CMAKE_BINARY_DIR}/Release)
-            install(FILES 
-                ${SDL2_DIR}/VisualC/x64/Release/SDL2.dll 
-                DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+            message("adding win64 libs to " ${TARGET_NAME})
+            target_link_directories(${TARGET_NAME} PRIVATE
+                ${SDL2_DIR}/lib/x64
+                ${GLEW_DIR}/lib/Release/x64)
+            find_file(SDL2_DLL_PATH 
+                SDL2.dll 
+                ${SDL2_DIR}/lib/x64/)
         
         else() # x86
-            message("adding win32 libs...")
-            target_link_libraries(${TARGET_NAME} 
-            ${SDL2_DIR}/VisualC/Win32/Release/SDL2.lib
-            ${SDL2_DIR}/VisualC/Win32/Release/SDL2main.lib
-            opengl32.lib
-            )
-            find_library(GLEW_LIBRARY glew32s.lib ${GLEW_DIR}/lib/Release/Win32)
-            if(GLEW_LIBRARY)
-                message(${GLEW_LIBRARY}" found!")
-                target_link_libraries(${TARGET_NAME} ${GLEW_LIBRARY})
-            endif() 
-
-            # install librarys
-            install(FILES 
-                ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
-                DESTINATION ${CMAKE_BINARY_DIR}/Release)
-            install(FILES 
-                ${SDL2_DIR}/VisualC/Win32/Release/SDL2.dll 
-                DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+            message("adding win32 libs to "  ${TARGET_NAME})
+            target_link_directories(${TARGET_NAME} PRIVATE
+                ${SDL2_DIR}/lib/x86
+                ${GLEW_DIR}/lib/Release/win32)
+            find_file(SDL2_DLL_PATH 
+                SDL2.dll 
+                ${SDL2_DIR}/lib/x86)
         endif()
+        target_link_libraries(${TARGET_NAME} 
+            SDL2.lib
+            SDL2main.lib
+            glew32s.lib
+            opengl32.lib)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Release)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    # sudo aptitude install libgl1-mesa-dev
+    # sudo aptitude install libglew-dev glew-utils
+    # sudo aptitude install libsdl2-dev
+    # sudo apt install libglm-dev
+        message("adding linux libs to "  ${TARGET_NAME})
+        target_compile_definitions(${TARGET_NAME} PRIVATE _LINUX)
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
+        target_link_libraries(${TARGET_NAME} 
+            SDL2
+            GLEW
+            GL
+            ${CMAKE_DL_LIBS})
     endif()
 endfunction()
 

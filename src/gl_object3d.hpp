@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 #include <GL/glew.h>
-#include <glm.hpp>
+#include <glm/glm.hpp>
 #include "data_types.hpp"
 #ifndef _GL_OBJECT3D_H
 #define _GL_OBJECT3D_H
