@@ -3,13 +3,14 @@
   developed by devseed
   v0.1
 */
-#include <memory>
-using std::shared_ptr;
-using std::make_shared;
 #ifndef _SDL_OBJECT2D_H
 #define _SDL_OBJECT2D_H
+#include <memory>
 #include "sdl_framework.hpp"
 #include "physics_object.hpp"
+using std::shared_ptr;
+class CAppSDL;
+
 class CObject2DSDL
 {
 protected:
@@ -30,7 +31,7 @@ public:
 };
 
 // A scene contains many objects and determine how objects interact with each other
-class CSceneSDL:public CScene<CMapList<CObject2DSDL*>>
+class CSceneSDL:public CScene<CMapList<shared_ptr<CObject2DSDL>>>
 {
 protected:
 	CAppSDL& m_appSDL;

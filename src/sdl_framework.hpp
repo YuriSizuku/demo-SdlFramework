@@ -3,37 +3,43 @@
    by devseed
    v0.1
 */
-
+#ifndef _SDL_FRAMEWORK_H
+#define _SDL_FRAMEWORK_H
 #ifdef USE_OPENGL
-#define GLEW_STATIC
-#include<GL/glew.h>
-#include "gl_object3d.hpp"
+	#define GLEW_STATIC
+	#include<GL/glew.h>
+	#include "gl_object3d.hpp"
 #endif
-#include<string>
-#include<vector>
-#include<map>
-#include<list>
 #ifdef _LINUX
 #include <SDL2/SDL.h>
 #else
 #include <SDL.h>
 #endif
+
+#include<string>
+#include<vector>
+#include<memory>
 #include "sdl_object2d.hpp"
 #include "data_types.hpp"
-
-#ifndef _SDL_FRAMEWORK_H
-#define _SDL_FRAMEWORK_H
 using std::vector;
 using std::string;
-using std::map;
-using std::list;
+using std::shared_ptr;
+
+#if(defined(_WIN32) || defined(_WIN64))
+#ifdef _DEBUG
+	#include <crtdbg.h>
+	#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
+#else
+	#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
+#endif
+
 enum AppStatus
 {
 	APP_RUNNING, 
 	APP_PAUSE, 
 	APP_STOP
 };
-
 class CObject2DSDL;
 class CSceneSDL;
 class CAppSDL;
@@ -94,10 +100,15 @@ protected:
 	SDL_GLContext m_glContext;
 	AppStatus m_appStatus;
 	SDL_Color m_background;
-	map<string, void*> m_info; // the global information for updata
 	CStageManegerSDL* m_stageManager;
 	int m_fps;
 	bool m_enableGl;
+
+	void releaseSDL();
+	void releaseGL();
+	void handleEvent(SDL_Event& event);
+	void update(); // this is for update the pysical status
+	void render();
 public:	
 	
 	// init the app
@@ -109,20 +120,9 @@ public:
 	void prepareWindow(SDL_Window *window, SDL_Renderer* render);
 	void prepareGL(int swap_interval=0, int major_version = 3, int minor_version = 2,
 		           int context_profile= SDL_GL_CONTEXT_PROFILE_ES);
-	void prepareGL(SDL_GLContext glContext);
 	void prepareStageManager(CStageManegerSDL* stageManger);
 	SDL_Window* getWindow();
 	SDL_Renderer* getRenderer();
-	SDL_GLContext& getGLContext();
-	
-	void releaseSDL();
-	void releaseGL();
-	
-	// for event loop
-	void handleEvent(SDL_Event& event);
-	void update(); // this is for update the pysical status
-	void render();
-	void run();
 	
 	// get or set app status
 	bool enableGl();
@@ -130,7 +130,8 @@ public:
 	void setFps(int fps);
 	void setBackground(Uint8 r, Uint8 g, Uint8 b);
 	SDL_Color& getBackground();
-	map<string, void*>& getGlobalInfo();
+	
+	void run();
 	void pause();
 	void resume();
 	void stop();

@@ -20,7 +20,7 @@ class CSimpleScene :public CSceneSDL
 public:
 	CSimpleScene(CAppSDL& appSDL):CSceneSDL(appSDL)
 	{
-		CCircleSDL* circle = new CCircleSDL(appSDL);
+		auto circle = shared_ptr<CCircleSDL>(new CCircleSDL(appSDL));
 		circle->create(30, { 100,0,100,255 });
 		m_pObjects.pushObject(circle);
 	}
@@ -34,7 +34,6 @@ public:
 
 	~CSimpleScene()
 	{
-		delete m_pObjects.atObject(0);
 	}
 };
 
@@ -46,7 +45,7 @@ int main(int argc, char * argv[])
 	app.prepareWindow("sdl circle demo", 800, 600);
 	app.prepareGL(); 
 	CStageManegerSDL simple_manager(app);
-	shared_ptr<CStageSDL> simple_stage = make_shared<CStageSDL> (CStageSDL(app));
+	shared_ptr<CStageSDL> simple_stage = shared_ptr<CStageSDL>(new CStageSDL(app));
 	shared_ptr<CSimpleScene> simple_scene =shared_ptr<CSimpleScene>(new CSimpleScene(app));
 	simple_stage.get()->pushScene(simple_scene);
 	simple_manager.pushStage(simple_stage);

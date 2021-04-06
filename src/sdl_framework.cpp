@@ -232,12 +232,6 @@ void CAppSDL::prepareGL(int swap_interval, int major_version, int minor_version,
 #endif
 }
 
-void CAppSDL::prepareGL(SDL_GLContext glContext)
-{
-	releaseGL();
-	m_glContext = glContext;
-}
-
 void CAppSDL::prepareStageManager(CStageManegerSDL* stageManger)
 {
 	m_stageManager = stageManger;
@@ -251,11 +245,6 @@ SDL_Window* CAppSDL::getWindow()
 SDL_Renderer* CAppSDL::getRenderer()
 {
 	return m_renderer;
-}
-
-SDL_GLContext& CAppSDL::getGLContext()
-{
-	return m_glContext;
 }
 
 void CAppSDL::releaseSDL()
@@ -354,6 +343,9 @@ void CAppSDL::run()
 		}
 		m_lastRenderTicks = SDL_GetTicks();
 	}
+#if(defined(_WIN32) || defined(_DEBUG))
+	_CrtCheckMemory();
+#endif
 }
 
 bool CAppSDL::enableGl()
@@ -380,11 +372,6 @@ void CAppSDL::setBackground(Uint8 r, Uint8 g, Uint8 b)
 SDL_Color& CAppSDL::getBackground()
 {
 	return m_background;
-}
-
-map<string, void*>& CAppSDL::getGlobalInfo()
-{
-	return m_info;
 }
 
 void CAppSDL::pause() 

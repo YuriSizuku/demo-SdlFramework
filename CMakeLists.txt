@@ -110,3 +110,13 @@ add_executable(${DEMO_NAME}
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})
+
+# gl test
+set(DEMO_NAME gl_test)
+add_executable(${DEMO_NAME}
+    src/example/${DEMO_NAME}.cpp
+    ${SDL_FRAMEWORK_CODE}
+    ${GL_FRAMEWORK_CODE})
+target_include_directories(${DEMO_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+config_externlib(${DEMO_NAME})

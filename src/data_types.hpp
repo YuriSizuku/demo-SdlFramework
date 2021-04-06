@@ -77,32 +77,6 @@ public:
 		it = m_maplist[type].erase(it);
 		return p;
 	}
-	bool releaseObject(int i, int type = 0)
-	{
-		auto it = atObjectIter(i, type);
-		if (it == m_maplist[type].end()) return false;
-		if (removeObject(it, type)) return true;
-		else return false;
-	}
-	bool releaseObject(typename list<T>::iterator& it, int type = 0)
-	{
-		auto p = removeObject(it, type);
-		if (p == NULL) return false;
-		delete p;
-		return true;
-	}
-	void releaseAllObjects()
-	{
-		for (auto it = m_maplist.begin(); it != m_maplist.end(); it++)
-		{
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				delete* it2;
-			}
-			(*it).second.clear();
-		}
-		m_maplist.clear();
-	}
 };
 
 template<typename T>

@@ -109,16 +109,13 @@ public:
 		
 		m_pCirclePlayer = NULL; m_pCircleEnemy = NULL; m_pCircleBullet = NULL;
 		m_pPlayer = NULL;
-		// init game objects
-		//initObjects();
+		m_pCirclePlayer = new CCircleSDL(m_appSDL, m_radiusPlayer, { 0x00, 0xff, 0xff, 0xff });
+		m_pCircleEnemy = new CCircleSDL(m_appSDL, m_radiusEnemy, { 0xff, 0x00, 0x00, 0xff });
+		m_pCircleBullet = new CCircleSDL(m_appSDL, m_radiusBullet, { 0xff, 0x00, 0xff, 0xff });
 	}
 
 	void initObjects()
 	{
-		m_pCirclePlayer = new CCircleSDL(m_appSDL, m_radiusPlayer, { 0x00, 0xff, 0xff, 0xff });
-		m_pCircleEnemy = new CCircleSDL(m_appSDL, m_radiusEnemy, { 0xff, 0x00, 0x00, 0xff });
-		m_pCircleBullet = new CCircleSDL(m_appSDL, m_radiusBullet, { 0xff, 0x00, 0xff, 0xff });
-
 		int screenW, screenH;
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
 		
@@ -243,7 +240,7 @@ public:
 			// game restart
 			if (scancode == SDL_SCANCODE_R)
 			{
-				m_pObjects.releaseAllObjects();
+				releaseAllObjects();
 				initObjects();
 			}
 			// player move start
@@ -339,9 +336,18 @@ public:
 		}
 	}
 
+	void releaseAllObjects()
+	{
+		for (auto obj : m_pObjects2DSDL)
+		{
+			delete obj;
+		}
+		m_pObjects2DSDL.clear();
+	}
+
 	~CDanmakuScene()
 	{
-		m_pObjects.releaseAllObjects();
+		releaseAllObjects();
 		delete m_pCirclePlayer, m_pCircleEnemy, m_pCircleBullet;
 	}
 };
