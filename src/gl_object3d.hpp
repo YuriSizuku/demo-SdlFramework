@@ -7,6 +7,8 @@
 #include <memory>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/trigonometric.hpp>
 #include "data_types.hpp"
 
 using std::vector;
@@ -14,11 +16,23 @@ using std::string;
 using std::cout;
 using std::endl;
 using std::shared_ptr;
+#ifdef _WIN32
+#define SEP '\\'
+#else
+#define SEP '/'
+#endif
+
+GLenum _glCheckError(const char* file, int line);
+#ifdef _DEBUG
+#define glCheckError() _glCheckError(__FILE__, __LINE__)
+#else
+#define glCheckError()
+#endif
 
 class CShaderGL
 {
 protected:
-	GLuint m_program;
+	GLuint m_program = -1;
 	vector<GLuint> m_shaders;
 public:
 	CShaderGL();
@@ -26,6 +40,17 @@ public:
 	void addShaderFile(string path, GLenum shaderType);
 	void addShaderSource(string& source, GLenum shaderType);
 	void linkProgram();
+	GLuint getProgram();
+	
+	// get, set uniform, return location
+	GLint getUniformLocation(string uniformName);
+	GLint getUniformBlockIndex(string uniformName);
+	GLint setUniform4fv(string uniformName, const GLfloat* data);
+	GLint setUniform4fv(string uniformName, GLsizei i, const GLfloat* data);
+	GLint setUniform4fv(string uniformName, GLsizei i, GLsizei count, const GLfloat* data);
+	GLint setUniformMat4fv(string uniformName, const GLfloat* data);
+	GLint setUniformBlock(string uniformName,
+		GLintptr offset, GLsizei size, const void* data);
 	void use();
 	virtual ~CShaderGL();
 };
@@ -102,30 +127,48 @@ typedef struct VertexInfo
 	glm::vec3 tangent;
 }VertexInfo;
 
+// a object3dgl may contains vao, vbo, ebo, textures and a rendering shader
+// also have a pysical component and extra info,such as id, type, status
 class CObject3DGL
 {
 protected:
 	GLuint m_vao=-1, m_vbo=-1, m_ebo=-1; // bind vao first, then vbo
-	GLuint m_program = -1;
+	GLsizei m_vboCount = 0, m_eboCount = 0;
+	GLenum m_drawMode = GL_TRIANGLES;
+	shared_ptr<CShaderGL> m_pShader = nullptr;
+	map<string, shared_ptr<CTextureGL>> m_pTextures;
 	glm::mat4 m_model = glm::mat4(1);
 public:
 	int m_type = 0, m_id = 0, m_status=0;
-	void* m_pPhysicsRelated;
+	shared_ptr<void*> m_pPhysicsRelated=nullptr;
+public:
+	static glm::vec3 calcTangent(const glm::vec3 &edge1, const glm::vec3 &edge2,
+		const glm::vec2& edgeST1, const glm::vec2& edgeST2);
+	static glm::vec3 calcNormal(const glm::vec3& edge1, glm::vec3& edge2);
 public:
 	CObject3DGL();
-	CObject3DGL(GLuint program, glm::mat4& m_model);
-	GLuint getVAO();
-	void fillVAO(); // glVertexAttribPointer
-	GLuint getVBO();
-	void fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage);
-	GLuint getEBO();
-	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage);
-	GLuint getProgram();
-	void setProgram(GLuint m_program);
+	CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader=nullptr); 
 	glm::mat4& getModel();
-	void setModel(glm::mat4 &model);
+	void setModel(const glm::mat4& model);
+	void setDrawMode(GLenum drawMode);
+
+	// VAO VBO EBO
+	GLuint getVAO();
+	void fillVAO(vector<GLint>& countIndex =vector<GLint>({3,2,3,3}));
+	GLuint getVBO();
+	void fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
+	GLuint getEBO();
+	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
+	
+	// shader, texture
+	shared_ptr<CShaderGL> getpShader();
+	void setpShader(shared_ptr<CShaderGL> shader);
+	map<string, shared_ptr<CTextureGL>> getpTextures();
+	bool addTexture(string name, shared_ptr<CTextureGL> texture);
+	bool removeTexture(string name);
+
 	virtual ~CObject3DGL();
-	virtual void draw() = 0;
+	virtual void draw();
 };
 
 // A scene contains multi objects,  as well as textures, lights to render a frame
@@ -134,28 +177,46 @@ class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
 protected:
 	vector<Light> m_lights;
 	map<string, shared_ptr<CShaderGL>> m_pShaders;
+	shared_ptr<CShaderGL> m_pCurrentShader;
 	map<string, shared_ptr<CTextureGL>> m_pTextures; // GLuint m_texture, m_normalMap, m_reflectMap, m_diffuseMap;
+	map<string, shared_ptr<CTextureGL>> m_pGbuffer;
 	glm::mat4 m_view = glm::mat4(1);
 	glm::mat4 m_project = glm::mat4(1);
 public:
 	CSceneGL();
-	void setView(glm::mat4& view);
+	CSceneGL(string programName, string programDir="./shader");
+	
+	// set get matrix, programName!="" will also update the uniform matrix data
+	void setView(const glm::mat4& view, string programName=""); 
 	glm::mat4& getView();
-	void setProject(glm::mat4& project);
+	void setProject(const glm::mat4& project, string programName="");
 	glm::mat4& getProject();
-	map<string, CTextureGL*>& getpTextures();
+	
+	// scene asset 
+	map<string, shared_ptr<CTextureGL>>& getpTextures();
 	vector<Light>& getLights();
-	map<string, CShaderGL>& getShaders();
-	void addShader(string programName="default", string programDir="shader"); // default.vert, default.frag, default.geom
-	void addTexture(string textureName, shared_ptr<CTextureGL> texture);
-	void removeTexture(string textureName);
-	virtual ~CSceneGL();
+	map<string, shared_ptr<CShaderGL>>& getShaders();
+	void addShader(string programName, string programDir="./shader"); // default.vert, default.frag, default.geom
+	bool addTexture(string textureName, shared_ptr<CTextureGL> texture);
+	bool removeTexture(string textureName);
+
+#if(0)
+	// defered render
+	virtual void createGbuffer();
+	virtual void renderEnviromentMap();
+	virtual void renderShadowMap();
+	virtual void renderBlendShadowMap();
+	virtual void renderBlendEnviromentMap();
+#endif
 	virtual void render();
+	virtual ~CSceneGL();
 };
 
 class CPlaneGL:public CObject3DGL
 {
-
+public:
+	CPlaneGL(const glm::mat4& model=glm::mat4(1), 
+		const shared_ptr<CShaderGL> shader = nullptr, GLenum usage=GL_STATIC_DRAW);
 };
 
 class CCubeGL:public CObject3DGL

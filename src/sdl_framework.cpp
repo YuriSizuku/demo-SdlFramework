@@ -318,7 +318,7 @@ void CAppSDL::run()
 {
 	if (!m_stageManager)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "m_stageMander is NULL");
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CAppSDL::run() m_stageManager is NULL");
 		return;
 	}
 	while (m_appStatus!=APP_STOP)

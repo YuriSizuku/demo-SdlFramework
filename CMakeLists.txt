@@ -120,3 +120,13 @@ add_executable(${DEMO_NAME}
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})
+set(SHADER_PATHS 
+    #src/shader/default.vert
+    src/shader/default.frag)
+add_custom_command(TARGET ${DEMO_NAME} POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E 
+       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/shader
+   COMMAND ${CMAKE_COMMAND} -E
+       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Release/shader
+   COMMAND ${CMAKE_COMMAND} -E 
+       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Debug/shader)

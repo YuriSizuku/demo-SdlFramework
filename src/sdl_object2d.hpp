@@ -19,7 +19,7 @@ public:
 	int m_type=0, m_id=0, m_status=0;
 	// physical information pointer, can be iterator or object pointer
 	// also can inherit physical class other than use related pointer
-	void* m_pPhysicsRelated = NULL; 
+	shared_ptr<void*> m_pPhysicsRelated = nullptr; 
 public:
 	CObject2DSDL(CAppSDL& appSDL);
 	void setAppSDL(CAppSDL& appSDL);
