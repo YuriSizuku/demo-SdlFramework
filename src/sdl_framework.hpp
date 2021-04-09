@@ -50,16 +50,16 @@ class CStageSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	vector<shared_ptr<CSceneSDL>> m_pScenesSDL;
+	vector<shared_ptr<CSceneSDL>> m_scenesSDL;
 	void* m_pCurrentScene = nullptr;
 #ifdef USE_OPENGL
-	vector<shared_ptr<CSceneGL>> m_pScenesGL;
+	vector<shared_ptr<CSceneGL>> m_scenesGL;
 #endif
 public:
 	CStageSDL(CAppSDL& appSDL);
-	void pushScene(shared_ptr<CSceneSDL> pScene);
+	void pushScene(shared_ptr<CSceneSDL> scene);
 #ifdef USE_OPENGL
-	void pushScene(shared_ptr<CSceneGL> pScene);
+	void pushScene(shared_ptr<CSceneGL> scene);
 #endif
 	void popScene();
 	
@@ -75,8 +75,8 @@ class CStageManegerSDL
 {
 protected:
 	CAppSDL& m_appSDL;
-	CStageSDL* m_pCurrentStage=nullptr;
-	vector<shared_ptr<CStageSDL>> m_pStages;
+	CStageSDL* m_currentStage=nullptr;
+	vector<shared_ptr<CStageSDL>> m_stages;
 public:
 	CStageManegerSDL(CAppSDL& appSDL);
 	void pushStage(shared_ptr<CStageSDL> stageSDL);
@@ -92,17 +92,17 @@ public:
 class CAppSDL 
 {
 private:
-	Uint32 m_lastRenderTicks;
-	bool m_bOutsideWindow;
+	Uint32 m_lastRenderTicks = 0;
+	bool m_bOutsideWindow = false;
 protected:
-	SDL_Window* m_window; // for multi window
-	SDL_Renderer* m_renderer;
-	SDL_GLContext m_glContext;
-	AppStatus m_appStatus;
-	SDL_Color m_background;
-	CStageManegerSDL* m_stageManager;
-	int m_fps;
-	bool m_enableGl;
+	SDL_Window* m_window = NULL; // for multi window
+	SDL_Renderer* m_renderer = 0;
+	SDL_GLContext m_glContext = {0};
+	AppStatus m_appStatus = APP_RUNNING;
+	SDL_Color m_background = {255,255,255,255};
+	shared_ptr<CStageManegerSDL> m_stageManager = nullptr;
+	int m_fps = 0;
+	bool m_enableGl = false;
 
 	void releaseSDL();
 	void releaseGL();
@@ -112,7 +112,7 @@ protected:
 public:	
 	
 	// init the app
-	CAppSDL();
+	CAppSDL(Uint32 flags= SDL_INIT_EVERYTHING);
 	virtual ~CAppSDL();
 	void prepareWindow(string title, int w, int h,
 		Uint32 window_flag = SDL_WINDOW_OPENGL, 
@@ -120,7 +120,7 @@ public:
 	void prepareWindow(SDL_Window *window, SDL_Renderer* render);
 	void prepareGL(int swap_interval=0, int major_version = 3, int minor_version = 2,
 		           int context_profile= SDL_GL_CONTEXT_PROFILE_ES);
-	void prepareStageManager(CStageManegerSDL* stageManger);
+	void prepareStageManager(shared_ptr<CStageManegerSDL> stageManger);
 	SDL_Window* getWindow();
 	SDL_Renderer* getRenderer();
 	

@@ -86,9 +86,9 @@ protected:
 	// scene status, check if the scene should exit or hang on
 	int m_type=0, m_id=0, m_status=0;
 	uint32_t m_lastUpdateTicks = 0;
-	T m_pObjects;
+	T m_objects;
 public:
-	T& getpObjects() { return m_pObjects; }
+	T& getpObjects() { return m_objects; }
 	virtual void handleEvent(void* event) {};
 	virtual void update(uint32_t currentTicks) { m_lastUpdateTicks = currentTicks; }
 	virtual void render()=0;

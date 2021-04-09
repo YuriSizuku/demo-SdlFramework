@@ -35,8 +35,8 @@ GLenum _glCheckError(const char* file, int line)
 /*CShaderGL start*/
 CShaderGL::CShaderGL()
 {
-	m_program = glCreateProgram();
-	if (!m_program)
+	m_programID = glCreateProgram();
+	if (!m_programID)
 	{
 		cerr << "ERROR CShaderGL::CShaderGL() create program failed" << endl;
 		return;
@@ -69,7 +69,7 @@ void CShaderGL::addShaderFile(string path, GLenum shaderType)
 void CShaderGL::addShaderSource(string& source, GLenum shaderType)
 {
 	auto shader = glCreateShader(shaderType);
-	m_shaders.push_back(shader);
+	m_shadersID.push_back(shader);
 	const char* csource = source.c_str();
 	GLint status;
 	glShaderSource(shader, 1, &csource, NULL);
@@ -81,30 +81,30 @@ void CShaderGL::addShaderSource(string& source, GLenum shaderType)
 		glGetShaderInfoLog(shader, LOGBUF_SIZE, NULL, logbuf);
 		cerr<<logbuf<<endl;
 	}
-	glAttachShader(m_program, shader);
+	glAttachShader(m_programID, shader);
 }
 
 void CShaderGL::linkProgram()
 {
-	glLinkProgram(m_program);
+	glLinkProgram(m_programID);
 	GLint status;
-	glGetProgramiv(m_program, GL_LINK_STATUS, &status);
+	glGetProgramiv(m_programID, GL_LINK_STATUS, &status);
 	if (status != GL_TRUE)
 	{
 		char logbuf[LOGBUF_SIZE];
-		glGetProgramInfoLog(m_program, LOGBUF_SIZE, NULL, logbuf);
+		glGetProgramInfoLog(m_programID, LOGBUF_SIZE, NULL, logbuf);
 		cerr<<logbuf<< endl;
 	}
 }
 
 GLuint CShaderGL::getProgram()
 {
-	return m_program;
+	return m_programID;
 }
 
 GLint CShaderGL::getUniformLocation(string uniformName)
 {
-	auto location = glGetUniformLocation(m_program, uniformName.c_str());
+	auto location = glGetUniformLocation(m_programID, uniformName.c_str());
 	if (location == -1)
 	{
 		cerr << "ERROR CShaderGL::getUniformLocation uniform \"" << uniformName << "\" not found!" << endl;
@@ -114,7 +114,7 @@ GLint CShaderGL::getUniformLocation(string uniformName)
 
 GLint CShaderGL::getUniformBlockIndex(string uniformName)
 {
-	auto location = glGetUniformBlockIndex(m_program, uniformName.c_str());
+	auto location = glGetUniformBlockIndex(m_programID, uniformName.c_str());
 	if (location == -1)
 	{
 		cerr << "ERROR CShaderGL::getUniformBlockIndex uniform \"" << uniformName << "\" not found!" << endl;
@@ -137,7 +137,7 @@ GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, const GLfloat* dat
 GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, GLsizei count, const GLfloat* data)
 {
 	auto location = getUniformLocation(uniformName + "[" + to_string(i) + "]");
-	glUseProgram(m_program);
+	glUseProgram(m_programID);
 	glUniform4fv(location, count, data);
 	return location;
 }
@@ -145,7 +145,7 @@ GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, GLsizei count, con
 GLint CShaderGL::setUniformMat4fv(string uniformName, const GLfloat* data)
 {
 	auto location = getUniformLocation(uniformName);
-	glUseProgram(m_program);
+	glUseProgram(m_programID);
 	glUniformMatrix4fv(location, 1, false, data);
 	return location;
 }
@@ -153,7 +153,7 @@ GLint CShaderGL::setUniformMat4fv(string uniformName, const GLfloat* data)
 GLint CShaderGL::setUniformBlock(string uniformName,
 	GLintptr offset, GLsizei size, const void* data)
 {
-	glUseProgram(m_program);
+	glUseProgram(m_programID);
 	GLuint block = -1;
 	glGenBuffers(1, &block);
 	glBindBuffer(GL_UNIFORM_BUFFER, block);
@@ -170,16 +170,16 @@ GLint CShaderGL::setUniformBlock(string uniformName,
 
 void CShaderGL::use()
 {
-	glUseProgram(m_program);
+	glUseProgram(m_programID);
 }
 
 CShaderGL::~CShaderGL()
 {
-	for (auto shader : m_shaders)
+	for (auto shader : m_shadersID)
 	{
 		glDeleteShader(shader);
 	}
-	glDeleteProgram(m_program);
+	glDeleteProgram(m_programID);
 }
 /*CShaderGL end*/
 
@@ -214,7 +214,7 @@ CObject3DGL::~CObject3DGL()
 CObject3DGL::CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader)
 {
 	m_model = model;
-	m_pShader = shader;
+	m_shader = shader;
 }
 
 glm::mat4& CObject3DGL::getModel()
@@ -300,51 +300,51 @@ void CObject3DGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-shared_ptr<CShaderGL> CObject3DGL::getpShader()
+shared_ptr<CShaderGL> CObject3DGL::getShader()
 {
-	return m_pShader;
+	return m_shader;
 }
 
 void CObject3DGL::setpShader(shared_ptr<CShaderGL> shader)
 {
-	m_pShader = shader;
+	m_shader = shader;
 }
 
-map<string, shared_ptr<CTextureGL>> CObject3DGL::getpTextures()
+map<string, shared_ptr<CTextureGL>> CObject3DGL::getTextures()
 {
-	return m_pTextures;
+	return m_textures;
 }
 
 bool CObject3DGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
 {
-	if (m_pTextures.find(textureName) != m_pTextures.end())
+	if (m_textures.find(textureName) != m_textures.end())
 	{
 		cerr << "ERROR CObject3DGL::addTexture " << textureName << " already exist!" << endl;
 		return false;
 	}
-	m_pTextures[textureName] = texture;
+	m_textures[textureName] = texture;
 	return true;
 }
 
 bool CObject3DGL::removeTexture(string textureName)
 {
-	if (m_pTextures.find(textureName) == m_pTextures.end())
+	if (m_textures.find(textureName) == m_textures.end())
 	{
 		cerr << "ERROR CObject3DGL::removeTexture " << textureName << " not exist!" << endl;
 		return false;
 	}
-	m_pTextures.erase(textureName);
+	m_textures.erase(textureName);
 	return true;
 }
 
 void CObject3DGL::draw()
 {
 	glBindVertexArray(m_vao);
-	if (m_pShader != nullptr)
+	if (m_shader != nullptr)
 	{
 		// update the model martrix every time, because the shader can be shared
-		m_pShader->setUniformMat4fv("model", glm::value_ptr(m_model));
-		m_pShader->use(); 
+		m_shader->setUniformMat4fv("model", glm::value_ptr(m_model));
+		m_shader->use(); 
 	}
 	if (m_ebo != -1)
 	{
@@ -368,6 +368,8 @@ CSceneGL::CSceneGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_MULTISAMPLE);
 }
 
 CSceneGL::CSceneGL(string programName, string programDir):CSceneGL()
@@ -387,12 +389,12 @@ void CSceneGL::setView(const glm::mat4& view, string programName)
 	m_view = view;
 	if (programName != "")
 	{
-		if (m_pShaders.find(programName) == m_pShaders.end())
+		if (m_shaders.find(programName) == m_shaders.end())
 		{
 			cout << "ERROR CSceneGL::setView program " << programName << " not exist" << endl;
 			return;
 		}
-		m_pShaders[programName]->setUniformMat4fv("view",glm::value_ptr(view));
+		m_shaders[programName]->setUniformMat4fv("view",glm::value_ptr(view));
 	}
 }
 
@@ -406,12 +408,12 @@ void CSceneGL::setProject(const glm::mat4& project, string programName)
 	m_project = project;
 	if (programName != "")
 	{
-		if (m_pShaders.find(programName) == m_pShaders.end())
+		if (m_shaders.find(programName) == m_shaders.end())
 		{
 			cerr << "ERROR CSceneGL::setProject program " << programName << " not exist" << endl;
 			return;
 		}
-		m_pShaders[programName]->setUniformMat4fv("project", glm::value_ptr(project));
+		m_shaders[programName]->setUniformMat4fv("project", glm::value_ptr(project));
 	}
 }
 
@@ -420,9 +422,9 @@ glm::mat4& CSceneGL::getProject()
 	return m_project;
 }
 
-map<string, shared_ptr<CTextureGL>>& CSceneGL::getpTextures()
+map<string, shared_ptr<CTextureGL>>& CSceneGL::getTextures()
 {
-	return m_pTextures;
+	return m_textures;
 }
 
 vector<Light>& CSceneGL::getLights()
@@ -432,12 +434,12 @@ vector<Light>& CSceneGL::getLights()
 
 map<string, shared_ptr<CShaderGL>>& CSceneGL::getShaders()
 {
-	return m_pShaders;
+	return m_shaders;
 }
 
 void CSceneGL::addShader(string programName, string programDir)
 {
-	if (m_pShaders.find(programName) != m_pShaders.end())
+	if (m_shaders.find(programName) != m_shaders.end())
 	{
 		cout << "ERROR " << programName << " already added!" << endl;
 	}
@@ -464,40 +466,40 @@ void CSceneGL::addShader(string programName, string programDir)
 	fin.close();
 	
 	// add shaders
-	m_pShaders[programName] = shared_ptr<CShaderGL>(new 
+	m_shaders[programName] = shared_ptr<CShaderGL>(new 
 		CShaderGL(vertPath, fragPath, geometryPath));
-	m_pCurrentShader = m_pShaders[programName];
+	m_pCurrentShader = m_shaders[programName];
 }
 
 bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
 {
-	if (m_pTextures.find(textureName) != m_pTextures.end())
+	if (m_textures.find(textureName) != m_textures.end())
 	{
 		cerr << "ERROR CSceneGL::addTexture " << textureName << " already exist!" << endl;
 		return false;
 	}
-	m_pTextures[textureName] = texture;
+	m_textures[textureName] = texture;
 	return true;
 }
 
 bool CSceneGL::removeTexture(string textureName)
 {
-	if (m_pTextures.find(textureName) == m_pTextures.end())
+	if (m_textures.find(textureName) == m_textures.end())
 	{
 		cerr << "ERROR CSceneGL::removeTexture " << textureName << " not exist!" << endl;
 		return false;
 	}
-	m_pTextures.erase(textureName);
+	m_textures.erase(textureName);
 	return true;
 }
 
 void CSceneGL::render()
 {
-	for (auto it = m_pObjects.get().begin(); it != m_pObjects.get().end(); it++)
+	for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
 	{
 		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
 		{
-			if ((*it2)->getpShader() == nullptr)
+			if ((*it2)->getShader() == nullptr)
 			{
 				m_pCurrentShader->use();
 				m_pCurrentShader->setUniformMat4fv("model",
@@ -512,7 +514,8 @@ void CSceneGL::render()
 
 /*CPlaneGL start*/
 CPlaneGL::CPlaneGL( const glm::mat4& model,  
-	const shared_ptr<CShaderGL> shader, GLenum usage):CObject3DGL(model, shader)
+	const shared_ptr<CShaderGL> shader,
+	GLenum usage):CObject3DGL(model, shader)
 {
 	const int EACH_COUNT = 11;
 	GLfloat vbo_buf[]= { // vec3 pos, vec2 texcoord, vec3 normal, vec3 tangent
@@ -528,14 +531,14 @@ CPlaneGL::CPlaneGL( const glm::mat4& model,
 	auto t1 = glm::make_vec2(&vbo_buf[EACH_COUNT+3]);
 	auto p2 = glm::make_vec3(&vbo_buf[EACH_COUNT*2]);
 	auto t2 = glm::make_vec2(&vbo_buf[EACH_COUNT*2+3]);
-	auto T = calcTangent(p1 - p0, p2 - p1, t1 - t0, t2 - t1);
-	auto N = calcNormal(p1 - p0, p2 - p1);
+	auto tangent = calcTangent(p1 - p0, p2 - p1, t1 - t0, t2 - t1);
+	auto normal = calcNormal(p1 - p0, p2 - p1);
 	for (int i = 0; i < 4; i++)
 	{
 		memcpy((GLfloat*)vbo_buf + EACH_COUNT * i + 5, 
-			glm::value_ptr(N), 3 * sizeof(GLfloat));
+			glm::value_ptr(normal), 3 * sizeof(GLfloat));
 		memcpy((GLfloat*)vbo_buf + EACH_COUNT * i + 8,
-			glm::value_ptr(T), 3 * sizeof(GLfloat));
+			glm::value_ptr(tangent), 3 * sizeof(GLfloat));
 	}
 	fillVBO(sizeof(vbo_buf), vbo_buf, usage);
 	fillEBO(sizeof(ebo_buf), ebo_buf, usage);
@@ -544,6 +547,93 @@ CPlaneGL::CPlaneGL( const glm::mat4& model,
 /*CPlaneGL end*/
 
 /*CCubeGL start*/
+CCubeGL::CCubeGL(const glm::mat4& model,
+	const shared_ptr<CShaderGL> shader,
+	GLenum usage) :CObject3DGL(model, shader)
+{
+	const int EACH_COUNT = 11;
+	GLfloat vbo_buf[EACH_COUNT * 36] = {
+	     0.5f,  0.5f, 0.5f, 0,   0,   0, 0, 0, 0, 0, 0,
+		-0.5f,  0.5f, 0.5f, 1.f, 0,   0, 0, 0, 0, 0, 0,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 0, 0, 0, 0, 0, 0,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 0, 0, 0, 0, 0, 0,
+		 0.5f, -0.5f, 0.5f, 0,   1.f, 0, 0, 0, 0, 0, 0,
+		 0.5f,  0.5f, 0.5f, 0,   0,   0, 0, 0, 0, 0, 0,
+	};
+	GLint face_ebo_buf[] = { 0,1,2,2,3,0 };
+
+	glm::vec2 texcoords[4] = { 
+		{ 0.f,0.f }, 
+		{ 1.f, 0.f }, 
+		{ 1.f, 1.f }, 
+		{0.f, 1.f} 
+	};
+	glm::vec3 points[4];
+
+	for (int i = 0; i < 6; i++) // 6 faces
+	{
+		switch (i)
+		{
+		case 0: // front 
+			points[0] = { 0.5f, 0.5f, 0.5f };
+			points[1] = { -0.5f, 0.5f, 0.5f };
+			points[2] = { -0.5f, -0.5f, 0.5f };
+			points[3] = { 0.5f, -0.5f, 0.5f };
+			break;
+		case 1: // back
+			points[0] = { 0.5f, 0.5f, -0.5f };
+			points[1] = { -0.5f, 0.5f, -0.5f };
+			points[2] = { -0.5f, -0.5f, -0.5f };
+			points[3] = { 0.5f, -0.5f, -0.5f };
+			break;
+		case 2: // bottom
+			points[0] = { 0.5f, -0.5f, -0.5f };
+			points[1] = { -0.5f, -0.5f, -0.5f };
+			points[2] = { -0.5f, -0.5f, 0.5f };
+			points[3] = { 0.5f, -0.5f, 0.5f };
+			break;
+		case 3: // top
+			points[0] = { 0.5f, 0.5f, -0.5f };
+			points[1] = { -0.5f, 0.5f, -0.5f };
+			points[2] = { -0.5f, 0.5f, 0.5f };
+			points[3] = { 0.5f,  0.5f, 0.5f };
+			break;
+		case 4: // left
+			points[0] = { -0.5f, 0.5f, -0.5f };
+			points[1] = { -0.5f, -0.5f, -0.5f };
+			points[2] = { -0.5f, -0.5f, 0.5f };
+			points[3] = { -0.5f, 0.5f, 0.5f };
+			break;
+		case 5: // right
+			points[0] = { 0.5f, 0.5f, -0.5f };
+			points[1] = { 0.5f, -0.5f, -0.5f };
+			points[2] = { 0.5f, -0.5f, 0.5f };
+			points[3] = { 0.5f, 0.5f, 0.5f };
+			break;
+		}
+		auto edge1 = points[1] - points[0];
+		auto edge2 = points[2] - points[1];
+		auto edgeST1 = texcoords[1] - texcoords[0];
+		auto edgeST2 = texcoords[2] - texcoords[1];
+		auto normal = calcNormal(edge1, edge2);
+		auto tangent = calcTangent(edge1, edge2, edgeST1, edgeST2);
+		
+		for (int j = 0; j < 6; j++)
+		{
+			memcpy(&vbo_buf[(i * 6 + j) * EACH_COUNT], 
+				glm::value_ptr(points[face_ebo_buf[j]]), 3 * sizeof(GLfloat));
+			memcpy(&vbo_buf[(i * 6 + j) * EACH_COUNT + 3],
+				glm::value_ptr(texcoords[face_ebo_buf[j]]), 2 * sizeof(GLfloat));
+			memcpy(&vbo_buf[(i * 6 + j) * EACH_COUNT + 5],
+				glm::value_ptr(normal), 3 * sizeof(GLfloat));
+			memcpy(&vbo_buf[(i * 6 + j) * EACH_COUNT + 8],
+				glm::value_ptr(tangent), 3 * sizeof(GLfloat));
+		}
+	}
+
+	fillVBO(sizeof(vbo_buf), vbo_buf);
+	fillVAO();
+}
 /*CCubeGL end*/
 
 /*CSphereGL start*/

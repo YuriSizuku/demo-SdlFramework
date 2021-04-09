@@ -239,7 +239,7 @@ public:
 		p->m_health = m_playerHealth;
 		p->m_id = 0;
 		p->m_type = PLAYER;
-		m_pObjects.pushObject(p, PLAYER);
+		m_objects.pushObject(p, PLAYER);
 	}
 	void initEnemys()
 	{
@@ -262,7 +262,7 @@ public:
 	{
 		auto p = shared_ptr<CCircleHUD>(new CCircleHUD(m_appSDL));
 		p->m_totalHealth = m_playerHealth;
-		m_pObjects.pushObject(p, HUD);
+		m_objects.pushObject(p, HUD);
 		initPlayers();
 		initEnemys();
 		m_startTicks = SDL_GetTicks();
@@ -282,10 +282,10 @@ public:
 		pb->m_vy = m_bulletSpeed * sin(p->m_theta);
 		pb->m_x = p->m_x + (p->m_r + 1.1f * pb->m_r) * cos(p->m_theta);
 		pb->m_y = p->m_y + (p->m_r + 1.1f * pb->m_r) * sin(p->m_theta);
-		pb->m_id = static_cast<int>(m_pObjects.get()[BULLENT].size() + 1);
+		pb->m_id = static_cast<int>(m_objects.get()[BULLENT].size() + 1);
 		pb->m_type = BULLENT;
 		pb->m_ownerType = p->m_type; pb->m_ownerID = p->m_ownerID;
-		m_pObjects.pushObject(pb, BULLENT);
+		m_objects.pushObject(pb, BULLENT);
 	}
 	void addEnemy(float x, float y, float v, float vtheta)
 	{
@@ -297,16 +297,16 @@ public:
 		p->m_theta = vtheta;
 		p->m_omiga = static_cast<float>(M_PI / 2);
 		p->m_health = 1;
-		p->m_id = static_cast<int>(m_pObjects.get()[ENEMY].size());
+		p->m_id = static_cast<int>(m_objects.get()[ENEMY].size());
 		p->m_type = ENEMY;
-		m_pObjects.pushObject(p, ENEMY);
+		m_objects.pushObject(p, ENEMY);
 	}
 
 	// game result
 	void onWin()
 	{
 		char title[100], message[256];
-		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD).get())->m_defeated;
+		int score = dynamic_cast<CCircleHUD*>(m_objects.atObject(0, HUD).get())->m_defeated;
 		SDL_snprintf(title, 100, "You Win!");
 		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
 			"Press R to restart\n"
@@ -316,7 +316,7 @@ public:
 	void onLose()
 	{
 		char title[100], message[256];
-		int score = dynamic_cast<CCircleHUD*>(m_pObjects.atObject(0, HUD).get())->m_defeated;
+		int score = dynamic_cast<CCircleHUD*>(m_objects.atObject(0, HUD).get())->m_defeated;
 		SDL_snprintf(title, 100, "Game Over with score %d",  score);
 		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
 			"You need to survive 5min, and defeat all enemies\n"
@@ -335,13 +335,13 @@ public:
 			m_winFlag = 1;
 		}
 		bool onLoseFlag = false;
-		if (m_pObjects.get()[PLAYER].size() <= 0)
+		if (m_objects.get()[PLAYER].size() <= 0)
 		{
 			onLoseFlag = true;
 		}
 		else
 		{
-			auto p = static_cast<CCircleDanmaku*>(m_pObjects.get()[PLAYER].begin()->get());
+			auto p = static_cast<CCircleDanmaku*>(m_objects.get()[PLAYER].begin()->get());
 			if (p->m_health < 0) onLoseFlag = true;
 		}
 		
@@ -353,9 +353,9 @@ public:
 
 		// check add enemy
 		Uint32 interval = currentTicks - m_lastAddEnemyTicks;
-		if (interval <= 3 * m_enemyFireInterval && m_pObjects.get()[ENEMY].size()>0) return;
+		if (interval <= 3 * m_enemyFireInterval && m_objects.get()[ENEMY].size()>0) return;
 		if (interval <= 1.5 * m_enemyFireInterval) return;
-		int maxUpdateEnemys = static_cast<int>(m_maxEnemy - m_pObjects.get()[ENEMY].size());
+		int maxUpdateEnemys = static_cast<int>(m_maxEnemy - m_objects.get()[ENEMY].size());
 		if (maxUpdateEnemys<=0) return;
 		int screenW, screenH;
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
@@ -397,8 +397,8 @@ public:
 		int i = 0;
 		srand(static_cast<unsigned int>(time(NULL)));
 		rand();
-		for (auto it = m_pObjects.get()[ENEMY].begin();
-			it != m_pObjects.get()[ENEMY].end(); it++)
+		for (auto it = m_objects.get()[ENEMY].begin();
+			it != m_objects.get()[ENEMY].end(); it++)
 		{
 			auto p1 = dynamic_cast<CCircleDanmaku*>((*it).get());
 			if (p1->m_health <= 0) continue;
@@ -410,21 +410,21 @@ public:
 			}
 
 			// check the enemy collision with each other or player
-			for (auto it2 = m_pObjects.get()[ENEMY].begin(); it2 != it; it2++)
+			for (auto it2 = m_objects.get()[ENEMY].begin(); it2 != it; it2++)
 			{
 				auto p2 = dynamic_cast<CCircleDanmaku*>((*it2).get());
 				if (p2->m_health <= 0) continue;
 				p1->doCollision(p2);
 			}
 			int j = 0;
-			for (auto it2 = m_pObjects.get()[PLAYER].begin(); 
-				it2 != m_pObjects.get()[PLAYER].end(); it2++)
+			for (auto it2 = m_objects.get()[PLAYER].begin(); 
+				it2 != m_objects.get()[PLAYER].end(); it2++)
 			{
 				auto p2 = dynamic_cast<CCircleDanmaku*>((*it2).get());
 				if (p2->m_health <= 0) continue;
 
 				// turn the theta to player
-				if (m_pObjects.get()[PLAYER].size() && i% m_pObjects.get()[PLAYER].size()==j)
+				if (m_objects.get()[PLAYER].size() && i% m_objects.get()[PLAYER].size()==j)
 				{
 					float p1p2theta = atan2(
 						p2->m_y + p2->m_vy* interval - p1->m_y, 
@@ -453,13 +453,13 @@ public:
 	void updatePlayers(Uint32 interval)
 	{
 		int i = 0;
-		for (auto it = m_pObjects.get()[PLAYER].begin();
-			it != m_pObjects.get()[PLAYER].end(); it++)
+		for (auto it = m_objects.get()[PLAYER].begin();
+			it != m_objects.get()[PLAYER].end(); it++)
 		{
 			auto p1 = dynamic_cast<CCircleDanmaku*>((*it).get());
 			if (p1->m_health < 0) return;
 			p1->move(interval);
-			for (auto it2 = m_pObjects.get()[PLAYER].begin(); it2 != it; it2++)
+			for (auto it2 = m_objects.get()[PLAYER].begin(); it2 != it; it2++)
 			{
 				auto p2 = dynamic_cast<CCircleDanmaku*>((*it2).get());
 				p1->doCollision(p2);
@@ -471,8 +471,8 @@ public:
 	{
 		int screenW, screenH;
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
-		for (auto it = m_pObjects.get()[BULLENT].begin();
-			it != m_pObjects.get()[BULLENT].end(); it++)
+		for (auto it = m_objects.get()[BULLENT].begin();
+			it != m_objects.get()[BULLENT].end(); it++)
 		{
 			auto p1 = dynamic_cast<CCircleDanmaku*>((*it).get());
 			if (p1->m_health <= 0) continue;
@@ -488,7 +488,7 @@ public:
 			// check bullet collision with enemy
 			if (p1->m_ownerType != ENEMY)
 			{
-				for (auto it2 = m_pObjects.get()[ENEMY].begin(); it2 != m_pObjects.get()[ENEMY].end(); it2++)
+				for (auto it2 = m_objects.get()[ENEMY].begin(); it2 != m_objects.get()[ENEMY].end(); it2++)
 				{
 					auto p2 = static_cast<CCircleDanmaku*>((*it2).get());
 					if (p2->m_health <= 0) continue;
@@ -496,13 +496,13 @@ public:
 					{
 						p1->m_health=0;
 						p2->m_health--;
-						dynamic_cast<CCircleHUD*>(m_pObjects.atObject(p1->m_ownerID, HUD).get())->m_defeated++;
+						dynamic_cast<CCircleHUD*>(m_objects.atObject(p1->m_ownerID, HUD).get())->m_defeated++;
 					}
 				}
 			}
 
 			// check bullet collision with player
-			for (auto it2 = m_pObjects.get()[PLAYER].begin(); it2 != m_pObjects.get()[PLAYER].end(); it2++)
+			for (auto it2 = m_objects.get()[PLAYER].begin(); it2 != m_objects.get()[PLAYER].end(); it2++)
 			{
 				auto p2 = dynamic_cast<CCircleDanmaku*>((*it2).get());
 				if (p2->m_health <= 0) continue;
@@ -516,12 +516,12 @@ public:
 	}
 	void removeDead(int type)
 	{
-		for (auto it = m_pObjects.get()[type].begin();it != m_pObjects.get()[type].end();)
+		for (auto it = m_objects.get()[type].begin();it != m_objects.get()[type].end();)
 		{
 			auto p = static_cast<CCircleDanmaku*>((*it).get());
 			if (p->m_health < 0)
 			{
-				m_pObjects.removeObject(it, type);
+				m_objects.removeObject(it, type);
 			}
 			else
 			{
@@ -555,8 +555,8 @@ public:
 		}		
 		
 		// check the player
-		if (m_pObjects.get()[PLAYER].size() <= 0) return;
-		auto pPlayer = static_cast<CCircleDanmaku*>(m_pObjects.get()[PLAYER].begin()->get());
+		if (m_objects.get()[PLAYER].size() <= 0) return;
+		auto pPlayer = static_cast<CCircleDanmaku*>(m_objects.get()[PLAYER].begin()->get());
 		if (!pPlayer)
 		{
 			SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CDanmakuScene::handleevent, pPlayer is NULL! ");
@@ -619,10 +619,10 @@ public:
 		updatePlayers(interval);
 		updateBullets(interval);
 		// update HUD
-		if (m_pObjects.get()[HUD].size() > 0 && m_pObjects.get()[PLAYER].size())
+		if (m_objects.get()[HUD].size() > 0 && m_objects.get()[PLAYER].size())
 		{
-			auto pHud = static_cast<CCircleHUD*>(m_pObjects.get()[HUD].begin()->get());
-			auto pPlayer = static_cast<CCircleDanmaku*>(m_pObjects.get()[PLAYER].begin()->get());
+			auto pHud = static_cast<CCircleHUD*>(m_objects.get()[HUD].begin()->get());
+			auto pPlayer = static_cast<CCircleDanmaku*>(m_objects.get()[PLAYER].begin()->get());
 			pHud->m_health = pPlayer->m_health;
 		}
 		// remove the object whose health is below 0
@@ -634,7 +634,7 @@ public:
 
 	void releaseAllObjects()
 	{
-		m_pObjects.get().clear();
+		m_objects.get().clear();
 	}
 
 	~CDanmakuScene()
@@ -649,14 +649,15 @@ int main(int argc, char* argv[])
 {
 	CAppSDL app;
 	app.prepareWindow("circle danmaku v1.0 by devseed", 800, 600);
-	app.prepareGL();
-	CStageManegerSDL manager(app);
+
+	// using the stage and scene after preparing the window
+	auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
 	auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
 	auto scene = shared_ptr<CDanmakuScene>(new CDanmakuScene(app));
 	stage->pushScene(scene);
-	manager.pushStage(stage);
+	stage_manager->pushStage(stage);
 	scene->initObjects();
-	app.prepareStageManager(&manager);
+	app.prepareStageManager(stage_manager);
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(144);
 	app.run();

@@ -63,6 +63,22 @@ function(config_externlib TARGET_NAME)
     endif()
 endfunction()
 
+function(copy_assets TARGET_NAME)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+       COMMAND ${CMAKE_COMMAND} -E 
+           copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/assets
+       COMMAND ${CMAKE_COMMAND} -E 
+           copy_directory  ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/assets
+       COMMAND ${CMAKE_COMMAND} -E
+           copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Release/assets
+       COMMAND ${CMAKE_COMMAND} -E 
+           copy_directory  ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/Release/assets
+       COMMAND ${CMAKE_COMMAND} -E 
+           copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Debug/assets
+       COMMAND ${CMAKE_COMMAND} -E 
+           copy_directory  ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/Debug/assets)
+endfunction()
+
 message("This is a simple sdl framework demo")
 set(CMAKE_CXX_STANDARD 11)
 set(SDL_FRAMEWORK_CODE
@@ -120,13 +136,4 @@ add_executable(${DEMO_NAME}
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})
-set(SHADER_PATHS 
-    #src/shader/default.vert
-    src/shader/default.frag)
-add_custom_command(TARGET ${DEMO_NAME} POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E 
-       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/shader
-   COMMAND ${CMAKE_COMMAND} -E
-       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Release/shader
-   COMMAND ${CMAKE_COMMAND} -E 
-       copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/Debug/shader)
+copy_assets(${DEMO_NAME})

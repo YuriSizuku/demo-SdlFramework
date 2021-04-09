@@ -31,7 +31,7 @@ CSceneSDL::~CSceneSDL()
 
 void CSceneSDL::render()
 {
-	for (auto it = m_pObjects.get().begin(); it != m_pObjects.get().end(); it++)
+	for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
 	{
 		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
 		{

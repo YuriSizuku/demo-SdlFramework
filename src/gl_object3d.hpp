@@ -32,8 +32,8 @@ GLenum _glCheckError(const char* file, int line);
 class CShaderGL
 {
 protected:
-	GLuint m_program = -1;
-	vector<GLuint> m_shaders;
+	GLuint m_programID = -1;
+	vector<GLuint> m_shadersID;
 public:
 	CShaderGL();
 	CShaderGL(string vertPath, string fragPath, string geometryPath="");
@@ -135,8 +135,8 @@ protected:
 	GLuint m_vao=-1, m_vbo=-1, m_ebo=-1; // bind vao first, then vbo
 	GLsizei m_vboCount = 0, m_eboCount = 0;
 	GLenum m_drawMode = GL_TRIANGLES;
-	shared_ptr<CShaderGL> m_pShader = nullptr;
-	map<string, shared_ptr<CTextureGL>> m_pTextures;
+	shared_ptr<CShaderGL> m_shader = nullptr;
+	map<string, shared_ptr<CTextureGL>> m_textures;
 	glm::mat4 m_model = glm::mat4(1);
 public:
 	int m_type = 0, m_id = 0, m_status=0;
@@ -161,9 +161,9 @@ public:
 	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
 	
 	// shader, texture
-	shared_ptr<CShaderGL> getpShader();
+	shared_ptr<CShaderGL> getShader();
 	void setpShader(shared_ptr<CShaderGL> shader);
-	map<string, shared_ptr<CTextureGL>> getpTextures();
+	map<string, shared_ptr<CTextureGL>> getTextures();
 	bool addTexture(string name, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string name);
 
@@ -176,10 +176,10 @@ class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
 {
 protected:
 	vector<Light> m_lights;
-	map<string, shared_ptr<CShaderGL>> m_pShaders;
+	map<string, shared_ptr<CShaderGL>> m_shaders;
 	shared_ptr<CShaderGL> m_pCurrentShader;
-	map<string, shared_ptr<CTextureGL>> m_pTextures; // GLuint m_texture, m_normalMap, m_reflectMap, m_diffuseMap;
-	map<string, shared_ptr<CTextureGL>> m_pGbuffer;
+	map<string, shared_ptr<CTextureGL>> m_textures; // GLuint m_texture, m_normalMap, m_reflectMap, m_diffuseMap;
+	map<string, shared_ptr<CTextureGL>> m_Gbuffer;
 	glm::mat4 m_view = glm::mat4(1);
 	glm::mat4 m_project = glm::mat4(1);
 public:
@@ -193,7 +193,7 @@ public:
 	glm::mat4& getProject();
 	
 	// scene asset 
-	map<string, shared_ptr<CTextureGL>>& getpTextures();
+	map<string, shared_ptr<CTextureGL>>& getTextures();
 	vector<Light>& getLights();
 	map<string, shared_ptr<CShaderGL>>& getShaders();
 	void addShader(string programName, string programDir="./shader"); // default.vert, default.frag, default.geom
@@ -216,12 +216,16 @@ class CPlaneGL:public CObject3DGL
 {
 public:
 	CPlaneGL(const glm::mat4& model=glm::mat4(1), 
-		const shared_ptr<CShaderGL> shader = nullptr, GLenum usage=GL_STATIC_DRAW);
+		const shared_ptr<CShaderGL> shader = nullptr, 
+		GLenum usage=GL_STATIC_DRAW);
 };
 
 class CCubeGL:public CObject3DGL
 {
-
+public:
+	CCubeGL(const glm::mat4& model = glm::mat4(1),
+		const shared_ptr<CShaderGL> shader = nullptr,
+		GLenum usage = GL_STATIC_DRAW);
 };
 
 class CSphereGL:public CObject3DGL

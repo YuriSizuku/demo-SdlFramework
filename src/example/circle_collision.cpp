@@ -357,12 +357,11 @@ int main(int argc, char* argv[])
 	std::cout << "circle_collision [-r(random inintial)] -n number  -v velocity" << std::endl;
 	CAppSDL app;
 	app.prepareWindow("circle collision", 800, 600);
-	app.prepareGL();
-	CStageManegerSDL manager(app);
+	auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
 	auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
 	auto scene = shared_ptr<CDanmakuScene>(new CDanmakuScene(app));
 	stage->pushScene(scene);
-	manager.pushStage(stage);
+	stage_manager->pushStage(stage);
 	
 	// init stage collision parameters
 	for (int i = 1; i < argc; i++)
@@ -391,7 +390,7 @@ int main(int argc, char* argv[])
 	}
 	
 	scene->initObjects();
-	app.prepareStageManager(&manager);
+	app.prepareStageManager(stage_manager);
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(144);
 	app.run();

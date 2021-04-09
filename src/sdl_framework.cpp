@@ -12,15 +12,15 @@ CStageSDL::~CStageSDL()
 
 void CStageSDL::pushScene(shared_ptr<CSceneSDL> pScene)
 {
-	m_pScenesSDL.push_back(pScene);
-	m_pCurrentScene = m_pScenesSDL.back().get();
+	m_scenesSDL.push_back(pScene);
+	m_pCurrentScene = m_scenesSDL.back().get();
 }
 
 #ifdef USE_OPENGL
 void CStageSDL::pushScene(shared_ptr<CSceneGL> pScene)
 {
-	m_pScenesGL .push_back(pScene);
-	m_pCurrentScene = m_pScenesGL.back().get();
+	m_scenesGL .push_back(pScene);
+	m_pCurrentScene = m_scenesGL.back().get();
 }
 #endif
 
@@ -28,14 +28,14 @@ void CStageSDL::popScene()
 {
 	if (!m_appSDL.enableGl())
 	{
-		m_pScenesSDL.pop_back();
-		m_pCurrentScene = m_pScenesSDL.back().get();
+		m_scenesSDL.pop_back();
+		m_pCurrentScene = m_scenesSDL.back().get();
 	}
 #ifdef USE_OPENGL
 	else
 	{
-		m_pScenesGL.pop_back();
-		m_pCurrentScene = m_pScenesGL.back().get();
+		m_scenesGL.pop_back();
+		m_pCurrentScene = m_scenesGL.back().get();
 	}
 #endif
 }
@@ -113,60 +113,51 @@ CStageManegerSDL::~CStageManegerSDL()
 
 void CStageManegerSDL::pushStage(shared_ptr<CStageSDL> stageSDL)
 {
-	m_pStages.push_back(stageSDL);
-	m_pCurrentStage = stageSDL.get();
+	m_stages.push_back(stageSDL);
+	m_currentStage = stageSDL.get();
 }
 
 void CStageManegerSDL::popStage()
 {
-	m_pStages.pop_back();
-	m_pCurrentStage = m_pStages.back().get();
+	m_stages.pop_back();
+	m_currentStage = m_stages.back().get();
 }
 
 void CStageManegerSDL::handleEvent(SDL_Event& event)
 {
-	if (m_pCurrentStage == nullptr)
+	if (m_currentStage == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::handleEvent stage is NULL");
 		return;
 	}
-	m_pCurrentStage->handleEvent(event);
+	m_currentStage->handleEvent(event);
 }
 
 void CStageManegerSDL::update()
 {
-	if (m_pCurrentStage == nullptr)
+	if (m_currentStage == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::update stage is NULL");
 		return;
 	}
-	m_pCurrentStage->update();
+	m_currentStage->update();
 }
 
 void CStageManegerSDL::render()
 {
-	if (m_pCurrentStage == nullptr)
+	if (m_currentStage == nullptr)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageManegerSDL::render stage is NULL");
 		return;
 	}
-	m_pCurrentStage->render();
+	m_currentStage->render();
 }
 /*CStageManagerSDL end*/
 
 /*CAppSDL start*/
-CAppSDL::CAppSDL()
+CAppSDL::CAppSDL(Uint32 flags)
 {
-	m_bOutsideWindow = false;
-	m_window = NULL;
-	m_renderer = NULL;
-	m_glContext = NULL;
-	m_fps = 0;
-	m_enableGl = false;
-	m_lastRenderTicks = 0;
-	m_background = { 0,0,0,255 };
-	m_appStatus = APP_RUNNING;	
-	m_stageManager = NULL;
+	SDL_Init(flags);
 }
 
 CAppSDL::~CAppSDL()
@@ -221,6 +212,8 @@ void CAppSDL::prepareGL(int swap_interval, int major_version, int minor_version,
 	ret = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, swap_interval);
 	if (ret) SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
 		"SDL_GL_SetAttribute error: %s", SDL_GetError());
+	ret = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	ret = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 	SDL_GL_SetSwapInterval(swap_interval);
 #ifdef __GLEW_H__
 	GLenum glewError = glewInit(); // if using glew, must glew init, or c++ error will occured
@@ -232,7 +225,7 @@ void CAppSDL::prepareGL(int swap_interval, int major_version, int minor_version,
 #endif
 }
 
-void CAppSDL::prepareStageManager(CStageManegerSDL* stageManger)
+void CAppSDL::prepareStageManager(shared_ptr<CStageManegerSDL> stageManger)
 {
 	m_stageManager = stageManger;
 }

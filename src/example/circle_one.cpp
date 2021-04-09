@@ -22,14 +22,14 @@ public:
 	{
 		auto circle = shared_ptr<CCircleSDL>(new CCircleSDL(appSDL));
 		circle->create(30, { 100,0,100,255 });
-		m_pObjects.pushObject(circle);
+		m_objects.pushObject(circle);
 	}
 
 	void handleEvent(void *e)
 	{
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		m_pObjects.atObject(0)->moveTo(static_cast<float>(x),  static_cast<float>(y));
+		m_objects.atObject(0)->moveTo(static_cast<float>(x),  static_cast<float>(y));
 	}
 
 	~CSimpleScene()
@@ -44,12 +44,12 @@ int main(int argc, char * argv[])
 	CAppSDL app;
 	app.prepareWindow("sdl circle demo", 800, 600);
 	app.prepareGL(); 
-	CStageManegerSDL simple_manager(app);
+	auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
 	shared_ptr<CStageSDL> simple_stage = shared_ptr<CStageSDL>(new CStageSDL(app));
 	shared_ptr<CSimpleScene> simple_scene =shared_ptr<CSimpleScene>(new CSimpleScene(app));
 	simple_stage.get()->pushScene(simple_scene);
-	simple_manager.pushStage(simple_stage);
-	app.prepareStageManager(&simple_manager);
+	stage_manager->pushStage(simple_stage);
+	app.prepareStageManager(stage_manager);
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(60);
 	app.run();
