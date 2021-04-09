@@ -40,10 +40,8 @@ public:
 int main(int argc, char * argv[])
 {
 	SDL_Log("This is a simle demo using sdl framework");
-
 	CAppSDL app;
 	app.prepareWindow("sdl circle demo", 800, 600);
-	app.prepareGL(); 
 	auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
 	shared_ptr<CStageSDL> simple_stage = shared_ptr<CStageSDL>(new CStageSDL(app));
 	shared_ptr<CSimpleScene> simple_scene =shared_ptr<CSimpleScene>(new CSimpleScene(app));

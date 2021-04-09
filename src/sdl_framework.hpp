@@ -8,6 +8,8 @@
 #ifdef USE_OPENGL
 	#define GLEW_STATIC
 	#include<GL/glew.h>
+	#ifdef _WIN32
+	#endif
 	#include "gl_object3d.hpp"
 #endif
 #ifdef _LINUX
@@ -104,6 +106,7 @@ protected:
 	int m_fps = 0;
 	bool m_enableGl = false;
 
+	void createGLContext();
 	void releaseSDL();
 	void releaseGL();
 	void handleEvent(SDL_Event& event);
@@ -117,16 +120,17 @@ public:
 	void prepareWindow(string title, int w, int h,
 		Uint32 window_flag = SDL_WINDOW_OPENGL, 
 		Uint32 renderer_flag = SDL_RENDERER_ACCELERATED);
-	void prepareWindow(SDL_Window *window, SDL_Renderer* render);
-	void prepareGL(int swap_interval=0, int major_version = 3, int minor_version = 2,
-		           int context_profile= SDL_GL_CONTEXT_PROFILE_ES);
+	void prepareWindow(SDL_Window* window, SDL_Renderer* render);
+	void prepareGL(int swap_interval = 0, int major_version = 3, int minor_version = 2,
+		           int context_profile= SDL_GL_CONTEXT_PROFILE_ES,
+	               bool enable = true); // prepareGL should use before prepareWindow
 	void prepareStageManager(shared_ptr<CStageManegerSDL> stageManger);
 	SDL_Window* getWindow();
 	SDL_Renderer* getRenderer();
 	
 	// get or set app status
-	bool enableGl();
-	bool enableGl(bool enable);
+	bool enableGL();
+	bool enableGL(bool enable);
 	void setFps(int fps);
 	void setBackground(Uint8 r, Uint8 g, Uint8 b);
 	SDL_Color& getBackground();

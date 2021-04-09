@@ -88,7 +88,7 @@ protected:
 	uint32_t m_lastUpdateTicks = 0;
 	T m_objects;
 public:
-	T& getpObjects() { return m_objects; }
+	T& getObjects() { return m_objects; }
 	virtual void handleEvent(void* event) {};
 	virtual void update(uint32_t currentTicks) { m_lastUpdateTicks = currentTicks; }
 	virtual void render()=0;

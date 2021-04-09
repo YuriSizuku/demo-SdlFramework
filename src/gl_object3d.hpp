@@ -162,7 +162,7 @@ public:
 	
 	// shader, texture
 	shared_ptr<CShaderGL> getShader();
-	void setpShader(shared_ptr<CShaderGL> shader);
+	void setShader(shared_ptr<CShaderGL> shader);
 	map<string, shared_ptr<CTextureGL>> getTextures();
 	bool addTexture(string name, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string name);
@@ -177,19 +177,21 @@ class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
 protected:
 	vector<Light> m_lights;
 	map<string, shared_ptr<CShaderGL>> m_shaders;
-	shared_ptr<CShaderGL> m_pCurrentShader;
+	shared_ptr<CShaderGL> m_currentShader;
 	map<string, shared_ptr<CTextureGL>> m_textures; // GLuint m_texture, m_normalMap, m_reflectMap, m_diffuseMap;
 	map<string, shared_ptr<CTextureGL>> m_Gbuffer;
 	glm::mat4 m_view = glm::mat4(1);
 	glm::mat4 m_project = glm::mat4(1);
 public:
 	CSceneGL();
-	CSceneGL(string programName, string programDir="./shader");
+	CSceneGL(string shaderName, string shaderDir="./shader");
 	
-	// set get matrix, programName!="" will also update the uniform matrix data
-	void setView(const glm::mat4& view, string programName=""); 
+	// set get matrix, shaderName!="" will also update the uniform matrix data
+	void setView(const glm::mat4& view, string shaderName=""); 
+	void setView(string shaderName);
 	glm::mat4& getView();
-	void setProject(const glm::mat4& project, string programName="");
+	void setProject(const glm::mat4& project, string shaderName="");
+	void setProject(string shaderName);
 	glm::mat4& getProject();
 	
 	// scene asset 

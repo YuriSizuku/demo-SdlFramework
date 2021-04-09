@@ -41,13 +41,14 @@ CShaderGL::CShaderGL()
 		cerr << "ERROR CShaderGL::CShaderGL() create program failed" << endl;
 		return;
 	}
+	glCheckError();
 }
 
 CShaderGL::CShaderGL(string vertPath, string fragPath, string geometryPath):CShaderGL()
 {
 	if (vertPath != "") addShaderFile(vertPath, GL_VERTEX_SHADER);
-	if (fragPath != "") addShaderFile(fragPath, GL_FRAGMENT_SHADER);
 	if (geometryPath != "") addShaderFile(geometryPath, GL_GEOMETRY_SHADER);
+	if (fragPath != "") addShaderFile(fragPath, GL_FRAGMENT_SHADER);
 	linkProgram();
 }
 
@@ -215,6 +216,7 @@ CObject3DGL::CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> sha
 {
 	m_model = model;
 	m_shader = shader;
+	glCheckError();
 }
 
 glm::mat4& CObject3DGL::getModel()
@@ -297,7 +299,7 @@ void CObject3DGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, usage);
 	m_eboCount = size / sizeof(GLuint);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
 }
 
 shared_ptr<CShaderGL> CObject3DGL::getShader()
@@ -305,7 +307,7 @@ shared_ptr<CShaderGL> CObject3DGL::getShader()
 	return m_shader;
 }
 
-void CObject3DGL::setpShader(shared_ptr<CShaderGL> shader)
+void CObject3DGL::setShader(shared_ptr<CShaderGL> shader)
 {
 	m_shader = shader;
 }
@@ -339,6 +341,7 @@ bool CObject3DGL::removeTexture(string textureName)
 
 void CObject3DGL::draw()
 {
+	glCheckError();
 	glBindVertexArray(m_vao);
 	if (m_shader != nullptr)
 	{
@@ -370,13 +373,14 @@ CSceneGL::CSceneGL()
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
+	glCheckError();
 }
 
-CSceneGL::CSceneGL(string programName, string programDir):CSceneGL()
+CSceneGL::CSceneGL(string shaderName, string shaderDir):CSceneGL()
 {
-	addShader(programName, programDir);
-	m_pCurrentShader->setUniformMat4fv("view", glm::value_ptr(m_view));
-	m_pCurrentShader->setUniformMat4fv("project", glm::value_ptr(m_project));	
+	addShader(shaderName, shaderDir);
+	m_currentShader->setUniformMat4fv("view", glm::value_ptr(m_view));
+	m_currentShader->setUniformMat4fv("project", glm::value_ptr(m_project));	
 }
 
 CSceneGL::~CSceneGL()
@@ -384,18 +388,23 @@ CSceneGL::~CSceneGL()
 
 }
 
-void CSceneGL::setView(const glm::mat4& view, string programName)
+void CSceneGL::setView(const glm::mat4& view, string shaderName)
 {
 	m_view = view;
-	if (programName != "")
+	if (shaderName != "")
 	{
-		if (m_shaders.find(programName) == m_shaders.end())
-		{
-			cout << "ERROR CSceneGL::setView program " << programName << " not exist" << endl;
-			return;
-		}
-		m_shaders[programName]->setUniformMat4fv("view",glm::value_ptr(view));
+		setView(shaderName);
 	}
+}
+
+void CSceneGL::setView(string shaderName)
+{
+	if (m_shaders.find(shaderName) == m_shaders.end())
+	{
+		cout << "ERROR CSceneGL::setView program " << shaderName << " not exist" << endl;
+		return;
+	}
+	m_shaders[shaderName]->setUniformMat4fv("view", glm::value_ptr(m_view));
 }
 
 glm::mat4& CSceneGL::getView()
@@ -403,18 +412,23 @@ glm::mat4& CSceneGL::getView()
 	return m_view;
 }
 
-void CSceneGL::setProject(const glm::mat4& project, string programName)
+void CSceneGL::setProject(const glm::mat4& project, string shaderName)
 {
 	m_project = project;
-	if (programName != "")
+	if (shaderName != "")
 	{
-		if (m_shaders.find(programName) == m_shaders.end())
-		{
-			cerr << "ERROR CSceneGL::setProject program " << programName << " not exist" << endl;
-			return;
-		}
-		m_shaders[programName]->setUniformMat4fv("project", glm::value_ptr(project));
+		setProject(shaderName);
 	}
+}
+
+void CSceneGL::setProject(string shaderName)
+{
+	if (m_shaders.find(shaderName) == m_shaders.end())
+	{
+		cerr << "ERROR CSceneGL::setProject program " << shaderName << " not exist" << endl;
+		return;
+	}
+	m_shaders[shaderName]->setUniformMat4fv("project", glm::value_ptr(m_project));
 }
 
 glm::mat4& CSceneGL::getProject()
@@ -437,13 +451,13 @@ map<string, shared_ptr<CShaderGL>>& CSceneGL::getShaders()
 	return m_shaders;
 }
 
-void CSceneGL::addShader(string programName, string programDir)
+void CSceneGL::addShader(string shaderName, string shaderDir)
 {
-	if (m_shaders.find(programName) != m_shaders.end())
+	if (m_shaders.find(shaderName) != m_shaders.end())
 	{
-		cout << "ERROR " << programName << " already added!" << endl;
+		cout << "ERROR " << shaderName << " already added!" << endl;
 	}
-	string path = programDir + "/" + programName;
+	string path = shaderDir + "/" + shaderName;
 	string vertPath = path + ".vert";
 	string fragPath = path + ".frag";
 	string geometryPath = path + ".geom";
@@ -455,20 +469,20 @@ void CSceneGL::addShader(string programName, string programDir)
 	else cout << "loading vertex shader: "<<vertPath<<endl;
 	fin.close();
 	
+	fin.open(geometryPath);
+	if (fin.fail()) geometryPath = "";
+	else cout << "loading geometry shader: " << geometryPath << endl;
+	fin.close();
+
 	fin.open(fragPath);
 	if (fin.fail()) fragPath = "";
 	else cout << "loading fragment shader: "<<fragPath<<endl;
 	fin.close();
 	
-	fin.open(geometryPath);
-	if (fin.fail()) geometryPath = "";
-	else cout << "loading geometry shader: "<<geometryPath<<endl;
-	fin.close();
-	
 	// add shaders
-	m_shaders[programName] = shared_ptr<CShaderGL>(new 
+	m_shaders[shaderName] = shared_ptr<CShaderGL>(new 
 		CShaderGL(vertPath, fragPath, geometryPath));
-	m_pCurrentShader = m_shaders[programName];
+	m_currentShader = m_shaders[shaderName];
 }
 
 bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
@@ -495,15 +509,16 @@ bool CSceneGL::removeTexture(string textureName)
 
 void CSceneGL::render()
 {
+	glCheckError();
 	for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
 	{
 		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
 		{
 			if ((*it2)->getShader() == nullptr)
 			{
-				m_pCurrentShader->use();
-				m_pCurrentShader->setUniformMat4fv("model",
+				m_currentShader->setUniformMat4fv("model",
 					glm::value_ptr((*it2)->getModel()));
+				m_currentShader->use();
 			}
 			(*it2)->draw();
 		}
@@ -543,6 +558,7 @@ CPlaneGL::CPlaneGL( const glm::mat4& model,
 	fillVBO(sizeof(vbo_buf), vbo_buf, usage);
 	fillEBO(sizeof(ebo_buf), ebo_buf, usage);
 	fillVAO();
+	glCheckError();
 }
 /*CPlaneGL end*/
 
@@ -573,42 +589,43 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 	for (int i = 0; i < 6; i++) // 6 faces
 	{
 		switch (i)
-		{
-		case 0: // front 
-			points[0] = { 0.5f, 0.5f, 0.5f };
-			points[1] = { -0.5f, 0.5f, 0.5f };
-			points[2] = { -0.5f, -0.5f, 0.5f };
-			points[3] = { 0.5f, -0.5f, 0.5f };
-			break;
-		case 1: // back
+		{ // different sequence determin the different direction
+		case 0: // right, GL_TEXTURE_CUBE_MAP_POSITIVE_X
 			points[0] = { 0.5f, 0.5f, -0.5f };
-			points[1] = { -0.5f, 0.5f, -0.5f };
-			points[2] = { -0.5f, -0.5f, -0.5f };
+			points[1] = { 0.5f, 0.5f, 0.5f };
+			points[2] = { 0.5f, -0.5f, 0.5f };
 			points[3] = { 0.5f, -0.5f, -0.5f };
 			break;
-		case 2: // bottom
-			points[0] = { 0.5f, -0.5f, -0.5f };
-			points[1] = { -0.5f, -0.5f, -0.5f };
-			points[2] = { -0.5f, -0.5f, 0.5f };
-			points[3] = { 0.5f, -0.5f, 0.5f };
+		case 1: // left, GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+			points[3] = { -0.5f, 0.5f, -0.5f };
+			points[2] = { -0.5f, 0.5f, 0.5f };
+			points[1] = { -0.5f, -0.5f, 0.5f };
+			points[0] = { -0.5f, -0.5f, -0.5f };
 			break;
-		case 3: // top
+		case 2: // top, GL_TEXTURE_CUBE_MAP_POSITIVE_Y
 			points[0] = { 0.5f, 0.5f, -0.5f };
 			points[1] = { -0.5f, 0.5f, -0.5f };
 			points[2] = { -0.5f, 0.5f, 0.5f };
 			points[3] = { 0.5f,  0.5f, 0.5f };
 			break;
-		case 4: // left
-			points[0] = { -0.5f, 0.5f, -0.5f };
-			points[1] = { -0.5f, -0.5f, -0.5f };
-			points[2] = { -0.5f, -0.5f, 0.5f };
-			points[3] = { -0.5f, 0.5f, 0.5f };
+		case 3: // bottom, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+			points[3] = { 0.5f, -0.5f, -0.5f };
+			points[2] = { -0.5f, -0.5f, -0.5f };
+			points[1] = { -0.5f, -0.5f, 0.5f };
+			points[0] = { 0.5f, -0.5f, 0.5f };
 			break;
-		case 5: // right
-			points[0] = { 0.5f, 0.5f, -0.5f };
-			points[1] = { 0.5f, -0.5f, -0.5f };
-			points[2] = { 0.5f, -0.5f, 0.5f };
-			points[3] = { 0.5f, 0.5f, 0.5f };
+
+		case 4: // back, GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+			points[0] = { 0.5f, 0.5f, 0.5f };
+			points[1] = { -0.5f, 0.5f, 0.5f };
+			points[2] = { -0.5f, -0.5f, 0.5f };
+			points[3] = { 0.5f, -0.5f, 0.5f };
+			break;
+		case 5: // front, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+			points[3] = { 0.5f, 0.5f, -0.5f };
+			points[2] = { -0.5f, 0.5f, -0.5f };
+			points[1] = { -0.5f, -0.5f, -0.5f };
+			points[0] = { 0.5f, -0.5f, -0.5f };
 			break;
 		}
 		auto edge1 = points[1] - points[0];
@@ -617,7 +634,7 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 		auto edgeST2 = texcoords[2] - texcoords[1];
 		auto normal = calcNormal(edge1, edge2);
 		auto tangent = calcTangent(edge1, edge2, edgeST1, edgeST2);
-		
+
 		for (int j = 0; j < 6; j++)
 		{
 			memcpy(&vbo_buf[(i * 6 + j) * EACH_COUNT], 
@@ -633,6 +650,7 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 
 	fillVBO(sizeof(vbo_buf), vbo_buf);
 	fillVAO();
+	glCheckError();
 }
 /*CCubeGL end*/
 

@@ -26,7 +26,7 @@ void CStageSDL::pushScene(shared_ptr<CSceneGL> pScene)
 
 void CStageSDL::popScene()
 {
-	if (!m_appSDL.enableGl())
+	if (!m_appSDL.enableGL())
 	{
 		m_scenesSDL.pop_back();
 		m_pCurrentScene = m_scenesSDL.back().get();
@@ -47,7 +47,7 @@ void CStageSDL::handleEvent(SDL_Event& event)
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::handleEvent scene is NULL");
 		return;
 	}
-	if (!m_appSDL.enableGl())
+	if (!m_appSDL.enableGL())
 	{
 		static_cast<CSceneSDL*>(m_pCurrentScene)->handleEvent(&event);
 	}
@@ -67,7 +67,7 @@ void CStageSDL::update()
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::update scene is NULL");
 		return;
 	}
-	if (!m_appSDL.enableGl())
+	if (!m_appSDL.enableGL())
 	{
 		static_cast<CSceneSDL*>(m_pCurrentScene)->update(currentTicks);
 	}
@@ -87,7 +87,7 @@ void CStageSDL::render()
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CStageSDL::render scene is NULL");
 		return;
 	}
-	if (!m_appSDL.enableGl())
+	if (!m_appSDL.enableGL())
 	{
 		static_cast<CSceneSDL*>(m_pCurrentScene)->render();
 	}
@@ -184,6 +184,13 @@ void CAppSDL::prepareWindow(string title, int w, int h, Uint32 window_flag, Uint
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT,
 			"SDL_CreateRenderer %s error: %s", title.c_str(), SDL_GetError());
 	}
+#ifdef USE_OPENGL
+	if (m_enableGl)
+	{
+		createGLContext();
+		glViewport(0, 0, w, h);
+	}
+#endif
 }
 
 void CAppSDL::prepareWindow(SDL_Window* window, SDL_Renderer *renderer)
@@ -192,16 +199,24 @@ void CAppSDL::prepareWindow(SDL_Window* window, SDL_Renderer *renderer)
 	m_bOutsideWindow = true;
 	m_window = window;
 	m_renderer = renderer;
+#ifdef USE_OPENGL
+	if (m_enableGl)
+	{
+
+		createGLContext();
+		int screenW, screenH;
+		SDL_GetWindowSize(m_window, &screenW, &screenH);
+		glViewport(0, 0, screenW, screenH);
+	}
+#endif
 }
 
-void CAppSDL::prepareGL(int swap_interval, int major_version, int minor_version,int context_profile)
+void CAppSDL::prepareGL(int swap_interval, int major_version, 
+	int minor_version,int context_profile, bool enable)
 {
+	enableGL(enable);
 	releaseGL();
-	if (!m_window)
-	{
-		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "can not create gl context before");
-	}
-	m_glContext = SDL_GL_CreateContext(m_window);
+	//createGLContext(); //must create window before prepareGL 
 	int ret;
 	ret = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major_version);
 	if (ret) SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
@@ -209,20 +224,12 @@ void CAppSDL::prepareGL(int swap_interval, int major_version, int minor_version,
 	ret = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
 	if (ret) SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
 		"SDL_GL_SetAttribute error: %s", SDL_GetError());
-	ret = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, swap_interval);
+	ret = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, context_profile);
 	if (ret) SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
 		"SDL_GL_SetAttribute error: %s", SDL_GetError());
 	ret = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	ret = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 	SDL_GL_SetSwapInterval(swap_interval);
-#ifdef __GLEW_H__
-	GLenum glewError = glewInit(); // if using glew, must glew init, or c++ error will occured
-	if (glewError != GLEW_OK)
-	{
-		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, 
-			"Error initializing GLEW! %s\n", glewGetErrorString(glewError));
-	}
-#endif
 }
 
 void CAppSDL::prepareStageManager(shared_ptr<CStageManegerSDL> stageManger)
@@ -238,6 +245,24 @@ SDL_Window* CAppSDL::getWindow()
 SDL_Renderer* CAppSDL::getRenderer()
 {
 	return m_renderer;
+}
+
+void CAppSDL::createGLContext()
+{
+	if (m_window && m_glContext==NULL)
+	{
+		m_glContext = SDL_GL_CreateContext(m_window);
+#ifdef __GLEW_H__
+		GLenum glewError = glewInit(); // if using glew, must glew init, or c++ error will occured
+		if (glewError != GLEW_OK)
+		{
+			SDL_LogError(SDL_LOG_CATEGORY_ASSERT,
+				"Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+		}
+#endif
+		SDL_GL_SwapWindow(m_window);
+		glGetError();
+	}
 }
 
 void CAppSDL::releaseSDL()
@@ -341,12 +366,12 @@ void CAppSDL::run()
 #endif
 }
 
-bool CAppSDL::enableGl()
+bool CAppSDL::enableGL()
 {
 	return m_enableGl;
 }
 
-bool CAppSDL::enableGl(bool enable)
+bool CAppSDL::enableGL(bool enable)
 {
 	m_enableGl = enable;
 	return m_enableGl;
