@@ -1,4 +1,14 @@
 #include "sdl_framework.hpp"
+/*Util start*/
+#ifdef USE_OPENGL
+Camera ExploreEvent(SDL_Event* event, const Camera& camera)
+{
+	Camera camera2;
+	return camera2;
+}
+#endif
+/*Util end*/
+
 /*CStageSDL start*/
 CStageSDL::CStageSDL(CAppSDL& appSDL):m_appSDL(appSDL)
 {

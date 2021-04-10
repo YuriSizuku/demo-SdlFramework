@@ -7,6 +7,7 @@ const string SHADER_DEFAULT = "default";
 const string SHADER_NORMAL = "normal_line";
 const string SHADER_DIR = "./assets";
 
+
 class CSimpleScene : public CSceneGL
 {
 public:
@@ -60,6 +61,8 @@ int main(int argc, char* argv[])
     auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
     auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
     auto scene = shared_ptr<CSceneGL>(new CSimpleScene());
+    auto layer = shared_ptr<CLayerGL>(new CLayerGL(*scene));
+    scene->pushLayer(layer);
     stage->pushScene(scene);
     stage_manager->pushStage(stage);
     app.prepareStageManager(stage_manager);

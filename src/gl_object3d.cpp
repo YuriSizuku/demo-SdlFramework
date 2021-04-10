@@ -11,6 +11,7 @@ using std::to_string;
 using std::ios;
 using std::cerr;
 
+/*Util functions start*/
 GLenum _glCheckError(const char* file, int line)
 {
 	GLenum errorCode;
@@ -31,6 +32,27 @@ GLenum _glCheckError(const char* file, int line)
 	}
 	return errorCode;
 }
+
+glm::mat4 CalcView(const Camera& camera)
+{
+	return glm::mat4(1);
+}
+
+glm::vec3 CalcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
+	const glm::vec2& edgeST1, const glm::vec2& edgeST2)
+{
+	auto detST = edgeST1.s * edgeST2.t - edgeST2.s * edgeST1.t;
+	return glm::vec3(
+		edgeST2.t * edge1.x - edgeST1.t * edge1.x,
+		edgeST2.t * edge1.y - edgeST1.t * edge1.y,
+		edgeST2.t * edge1.z - edgeST1.t * edge1.z) / detST;
+}
+
+glm::vec3 CalcNormal(const glm::vec3& edge1, glm::vec3& edge2)
+{
+	return glm::cross(edge1, edge2);
+}
+/*Util functions end*/
 
 /*CShaderGL start*/
 CShaderGL::CShaderGL()
@@ -185,21 +207,6 @@ CShaderGL::~CShaderGL()
 /*CShaderGL end*/
 
 /*CObject3DGL start*/
-glm::vec3 CObject3DGL::calcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
-	const glm::vec2& edgeST1, const glm::vec2& edgeST2)
-{
-	auto detST = edgeST1.s * edgeST2.t - edgeST2.s * edgeST1.t;
-	return glm::vec3(
-		edgeST2.t * edge1.x - edgeST1.t * edge1.x, 
-		edgeST2.t * edge1.y - edgeST1.t * edge1.y,
-		edgeST2.t * edge1.z - edgeST1.t * edge1.z)/ detST;
-}
-
-glm::vec3 CObject3DGL::calcNormal(const glm::vec3& edge1, glm::vec3& edge2)
-{
-	return glm::cross(edge1, edge2);
-}
-
 CObject3DGL::CObject3DGL()
 {
 
@@ -215,7 +222,7 @@ CObject3DGL::~CObject3DGL()
 CObject3DGL::CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader)
 {
 	m_model = model;
-	m_shader = shader;
+	m_shaders[0] = shader;
 	glCheckError();
 }
 
@@ -302,17 +309,28 @@ void CObject3DGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
 }
 
-shared_ptr<CShaderGL> CObject3DGL::getShader()
+map<size_t, shared_ptr<CShaderGL>>&  CObject3DGL::getShaders()
 {
-	return m_shader;
+	return m_shaders;
 }
 
-void CObject3DGL::setShader(shared_ptr<CShaderGL> shader)
+void CObject3DGL::setShader(shared_ptr<CShaderGL> shader, int index)
 {
-	m_shader = shader;
+	m_shaders[index] = shader;
 }
 
-map<string, shared_ptr<CTextureGL>> CObject3DGL::getTextures()
+bool CObject3DGL::removeShader(int index)
+{
+	if (m_shaders.find(index) == m_shaders.end())
+	{
+		cerr << "ERROR CObject3DGL::removeShader " << index << " not exist!" << endl;
+		return false;
+	}
+	m_shaders.erase(index);
+	return true;
+}
+
+map<string, shared_ptr<CTextureGL>>& CObject3DGL::getTextures()
 {
 	return m_textures;
 }
@@ -339,30 +357,81 @@ bool CObject3DGL::removeTexture(string textureName)
 	return true;
 }
 
-void CObject3DGL::draw()
+bool CObject3DGL::beforeDrawObject(int shaderIndex)
 {
 	glCheckError();
+	return true;
+}
+
+bool CObject3DGL::afterDrawObject(int shaderIndex, bool drawed)
+{
+	glCheckError();
+	return true;
+}
+
+
+void CObject3DGL::draw(int shaderIndex)
+{
+	bool drawed = false;
 	glBindVertexArray(m_vao);
-	if (m_shader != nullptr)
+	if (m_shaders.find(shaderIndex)!=m_shaders.end())
 	{
 		// update the model martrix every time, because the shader can be shared
-		m_shader->setUniformMat4fv("model", glm::value_ptr(m_model));
-		m_shader->use(); 
+		m_shaders[shaderIndex]->setUniformMat4fv("model", glm::value_ptr(m_model));
+		m_shaders[shaderIndex]->use();
 	}
-	if (m_ebo != -1)
+	if (beforeDrawObject(shaderIndex))
 	{
-		glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0); 
+		if (m_ebo != -1) glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0);
+		else glDrawArrays(m_drawMode, 0, m_vboCount);
+		drawed = true;
 	}
-	else
-	{
-		glDrawArrays(m_drawMode, 0, m_vboCount);
-	}
-	glCheckError();
-	glUseProgram(0);
+	afterDrawObject(shaderIndex, drawed);
 	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 /*CObject3DGL end*/
+
+/*CLayerGL start*/
+CLayerGL::CLayerGL(CSceneGL& scene):m_scene(scene)
+{
+	m_layerIndex = scene.getLayers().size();
+}
+
+CLayerGL::~CLayerGL()
+{
+
+}
+
+bool CLayerGL::beforeDrawLayer()
+{
+	return true;
+}
+
+bool CLayerGL::afterDrawLayer(bool drawed)
+{
+	return true;
+}
+
+void CLayerGL::draw()
+{
+	auto m_objects = m_scene.getObjects();
+	bool drawed = false;
+	if (beforeDrawLayer())
+	{
+		for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
+		{
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			{
+				(*it2)->draw(m_layerIndex);
+			}
+		}
+		drawed = true;
+	}
+	afterDrawLayer(drawed);
+}
+/*CLayerGL end*/
 
 /*CSceneGL start*/
 CSceneGL::CSceneGL()
@@ -379,8 +448,6 @@ CSceneGL::CSceneGL()
 CSceneGL::CSceneGL(string shaderName, string shaderDir):CSceneGL()
 {
 	addShader(shaderName, shaderDir);
-	m_currentShader->setUniformMat4fv("view", glm::value_ptr(m_view));
-	m_currentShader->setUniformMat4fv("project", glm::value_ptr(m_project));	
 }
 
 CSceneGL::~CSceneGL()
@@ -441,9 +508,35 @@ map<string, shared_ptr<CTextureGL>>& CSceneGL::getTextures()
 	return m_textures;
 }
 
+bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
+{
+	if (m_textures.find(textureName) != m_textures.end())
+	{
+		cerr << "ERROR CSceneGL::addTexture " << textureName << " already exist!" << endl;
+		return false;
+	}
+	m_textures[textureName] = texture;
+	return true;
+}
+
+vector<shared_ptr<CLayerGL>>& CSceneGL::getLayers()
+{
+	return m_layers;
+}
+
+void CSceneGL::pushLayer(shared_ptr<CLayerGL> layer)
+{
+	m_layers.push_back(layer);
+}
+
 vector<Light>& CSceneGL::getLights()
 {
 	return m_lights;
+}
+
+void CSceneGL::pushLight(Light light)
+{
+	m_lights.push_back(light);
 }
 
 map<string, shared_ptr<CShaderGL>>& CSceneGL::getShaders()
@@ -455,7 +548,7 @@ void CSceneGL::addShader(string shaderName, string shaderDir)
 {
 	if (m_shaders.find(shaderName) != m_shaders.end())
 	{
-		cout << "ERROR " << shaderName << " already added!" << endl;
+		cout << "ERROR CSceneGL::addShader" << shaderName << " already added!" << endl;
 	}
 	string path = shaderDir + "/" + shaderName;
 	string vertPath = path + ".vert";
@@ -479,21 +572,9 @@ void CSceneGL::addShader(string shaderName, string shaderDir)
 	else cout << "loading fragment shader: "<<fragPath<<endl;
 	fin.close();
 	
-	// add shaders
+	// add shaders 
 	m_shaders[shaderName] = shared_ptr<CShaderGL>(new 
 		CShaderGL(vertPath, fragPath, geometryPath));
-	m_currentShader = m_shaders[shaderName];
-}
-
-bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
-{
-	if (m_textures.find(textureName) != m_textures.end())
-	{
-		cerr << "ERROR CSceneGL::addTexture " << textureName << " already exist!" << endl;
-		return false;
-	}
-	m_textures[textureName] = texture;
-	return true;
 }
 
 bool CSceneGL::removeTexture(string textureName)
@@ -510,20 +591,10 @@ bool CSceneGL::removeTexture(string textureName)
 void CSceneGL::render()
 {
 	glCheckError();
-	for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
+	for (auto layer : m_layers)
 	{
-		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-		{
-			if ((*it2)->getShader() == nullptr)
-			{
-				m_currentShader->setUniformMat4fv("model",
-					glm::value_ptr((*it2)->getModel()));
-				m_currentShader->use();
-			}
-			(*it2)->draw();
-		}
+		layer->draw();
 	}
-	glUseProgram(0);
 }
 /*CSceneGL end*/
 
@@ -546,8 +617,8 @@ CPlaneGL::CPlaneGL( const glm::mat4& model,
 	auto t1 = glm::make_vec2(&vbo_buf[EACH_COUNT+3]);
 	auto p2 = glm::make_vec3(&vbo_buf[EACH_COUNT*2]);
 	auto t2 = glm::make_vec2(&vbo_buf[EACH_COUNT*2+3]);
-	auto tangent = calcTangent(p1 - p0, p2 - p1, t1 - t0, t2 - t1);
-	auto normal = calcNormal(p1 - p0, p2 - p1);
+	auto tangent = ::CalcTangent(p1 - p0, p2 - p1, t1 - t0, t2 - t1);
+	auto normal = ::CalcNormal(p1 - p0, p2 - p1);
 	for (int i = 0; i < 4; i++)
 	{
 		memcpy((GLfloat*)vbo_buf + EACH_COUNT * i + 5, 
@@ -632,8 +703,8 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 		auto edge2 = points[2] - points[1];
 		auto edgeST1 = texcoords[1] - texcoords[0];
 		auto edgeST2 = texcoords[2] - texcoords[1];
-		auto normal = calcNormal(edge1, edge2);
-		auto tangent = calcTangent(edge1, edge2, edgeST1, edgeST2);
+		auto normal = ::CalcNormal(edge1, edge2);
+		auto tangent = ::CalcTangent(edge1, edge2, edgeST1, edgeST2);
 
 		for (int j = 0; j < 6; j++)
 		{

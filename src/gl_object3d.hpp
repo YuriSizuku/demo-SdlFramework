@@ -29,6 +29,33 @@ GLenum _glCheckError(const char* file, int line);
 #define glCheckError()
 #endif
 
+typedef struct Light
+{
+
+}Light;
+
+typedef struct Vertex
+{
+	glm::vec3 pos;
+	glm::vec2 texcoord;
+	glm::vec3 normal;
+	glm::vec3 tangent;
+}Vertex;
+
+typedef struct Camera
+{
+	glm::vec3 pos = {0.f,0.f,3.f};
+	glm::vec3 angle = {glm::radians(-90.f),glm::radians(0.f),glm::radians(0.f) };
+	float fov = glm::radians(45.f);
+}Camera;
+
+glm::mat4 CalcView(const Camera& camera);
+glm::vec3 CalcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
+	const glm::vec2& edgeST1, const glm::vec2& edgeST2);
+glm::vec3 CalcNormal(const glm::vec3& edge1, glm::vec3& edge2);
+
+class CSceneGL;
+
 class CShaderGL
 {
 protected:
@@ -114,19 +141,6 @@ public:
 	virtual ~CTextureCubeMapGL();
 };
 
-typedef struct Light
-{
-
-}Light;
-
-typedef struct VertexInfo
-{
-	glm::vec3 pos;
-	glm::vec2 texcoord;
-	glm::vec3 normal;
-	glm::vec3 tangent;
-}VertexInfo;
-
 // a object3dgl may contains vao, vbo, ebo, textures and a rendering shader
 // also have a pysical component and extra info,such as id, type, status
 class CObject3DGL
@@ -135,16 +149,17 @@ protected:
 	GLuint m_vao=-1, m_vbo=-1, m_ebo=-1; // bind vao first, then vbo
 	GLsizei m_vboCount = 0, m_eboCount = 0;
 	GLenum m_drawMode = GL_TRIANGLES;
-	shared_ptr<CShaderGL> m_shader = nullptr;
+	// a object can using multi shader for different layer
+	// use map is about someof the layer may not need to use the object
+	map<size_t, shared_ptr<CShaderGL>> m_shaders; 
 	map<string, shared_ptr<CTextureGL>> m_textures;
 	glm::mat4 m_model = glm::mat4(1);
 public:
 	int m_type = 0, m_id = 0, m_status=0;
 	shared_ptr<void*> m_pPhysicsRelated=nullptr;
-public:
-	static glm::vec3 calcTangent(const glm::vec3 &edge1, const glm::vec3 &edge2,
-		const glm::vec2& edgeST1, const glm::vec2& edgeST2);
-	static glm::vec3 calcNormal(const glm::vec3& edge1, glm::vec3& edge2);
+protected:
+	virtual bool beforeDrawObject(int shaderIndex); // set unifroms and values here
+	virtual bool afterDrawObject(int shaderIndex, bool drawed);
 public:
 	CObject3DGL();
 	CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader=nullptr); 
@@ -161,23 +176,67 @@ public:
 	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
 	
 	// shader, texture
-	shared_ptr<CShaderGL> getShader();
-	void setShader(shared_ptr<CShaderGL> shader);
-	map<string, shared_ptr<CTextureGL>> getTextures();
+	map<size_t, shared_ptr<CShaderGL>>&  getShaders();
+	void setShader(shared_ptr<CShaderGL> shader, int index=0);
+	bool removeShader(int index = 0);
+	map<string, shared_ptr<CTextureGL>>& getTextures();
 	bool addTexture(string name, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string name);
 
 	virtual ~CObject3DGL();
+	virtual void draw(int shaderIndex=0);
+};
+
+// each layer contains many objects,  as well as textures, lights to render a frame
+class CLayerGL
+{
+protected:
+	CSceneGL& m_scene;
+	size_t m_layerIndex;
+protected:
+	virtual bool beforeDrawLayer(); // set unifroms and values here
+	virtual bool afterDrawLayer(bool drawed);
+public:
+	CLayerGL(CSceneGL& scene);
+	virtual ~CLayerGL();
 	virtual void draw();
 };
 
-// A scene contains multi objects,  as well as textures, lights to render a frame
+class CShadowMapLayerGL : public CLayerGL
+{
+private:
+	Light* m_currentLight=NULL;
+public:
+};
+
+class CEnviromentLayerGL : public CLayerGL
+{
+private:
+	shared_ptr<CObject3DGL> m_currentObject;
+public:
+};
+
+class CBlendLayerGL : public CLayerGL
+{
+
+};
+
+class CDebugNormalLayerGL : public CLayerGL
+{
+protected:
+	shared_ptr<CShaderGL> m_normalShader;
+public:
+	CDebugNormalLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> normalShader);
+};
+
+
+// A scene contains multi layers for defered render
 class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
 {
 protected:
+	vector<shared_ptr<CLayerGL>> m_layers;
 	vector<Light> m_lights;
 	map<string, shared_ptr<CShaderGL>> m_shaders;
-	shared_ptr<CShaderGL> m_currentShader;
 	map<string, shared_ptr<CTextureGL>> m_textures; // GLuint m_texture, m_normalMap, m_reflectMap, m_diffuseMap;
 	map<string, shared_ptr<CTextureGL>> m_Gbuffer;
 	glm::mat4 m_view = glm::mat4(1);
@@ -195,10 +254,13 @@ public:
 	glm::mat4& getProject();
 	
 	// scene asset 
-	map<string, shared_ptr<CTextureGL>>& getTextures();
+	vector<shared_ptr<CLayerGL>>& getLayers();
+	void pushLayer(shared_ptr<CLayerGL> layer);
 	vector<Light>& getLights();
+	void pushLight(Light light);
 	map<string, shared_ptr<CShaderGL>>& getShaders();
-	void addShader(string programName, string programDir="./shader"); // default.vert, default.frag, default.geom
+	void addShader(string shaderName, string shaderDir="./shader"); // default.vert, default.frag, default.geom
+	map<string, shared_ptr<CTextureGL>>& getTextures();
 	bool addTexture(string textureName, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string textureName);
 

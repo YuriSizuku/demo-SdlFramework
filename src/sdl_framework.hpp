@@ -36,6 +36,10 @@ using std::shared_ptr;
 #endif
 #endif
 
+#ifdef USE_OPENGL
+Camera ExploreEvent(SDL_Event* event, const Camera& camera);
+#endif
+
 enum AppStatus
 {
 	APP_RUNNING, 
