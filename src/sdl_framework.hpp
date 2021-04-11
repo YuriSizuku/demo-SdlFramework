@@ -37,7 +37,10 @@ using std::shared_ptr;
 #endif
 
 #ifdef USE_OPENGL
-Camera ExploreEvent(SDL_Event* event, const Camera& camera);
+// WASD position, QE up down, ZC fov,  R reset
+// JL yaw, IK pitch, UO roll; return true if move
+bool Explore3DEventSDL(SDL_Event* eventSDL, Camera& camera,
+	float stepPos,float stepAngle, float stepFov);
 #endif
 
 enum AppStatus

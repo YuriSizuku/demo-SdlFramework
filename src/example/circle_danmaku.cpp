@@ -640,12 +640,14 @@ public:
 	~CDanmakuScene()
 	{
 		releaseAllObjects();
-		delete m_pCirclePlayer, m_pCircleEnemy; 
-		delete m_pCircleBulletPlayer, m_pCircleBulletEnemy;
+		delete m_pCirclePlayer;
+		delete m_pCircleEnemy;
+		delete m_pCircleBulletPlayer;
+		delete m_pCircleBulletEnemy;
 	}
 };
 
-int main(int argc, char* argv[])
+void start()
 {
 	CAppSDL app;
 	app.prepareWindow("circle danmaku v1.0 by devseed", 800, 600);
@@ -661,10 +663,15 @@ int main(int argc, char* argv[])
 	app.setBackground(0xff, 0xc0, 0xcb);
 	app.setFps(144);
 	app.run();
+}
+
+int main(int argc, char* argv[])
+{
+	start();
 #ifdef _DEBUG
 	SDL_Log("game exit");
 #ifdef _WIN32
-	_CrtCheckMemory();
+	_CrtDumpMemoryLeaks();
 #endif
 #endif
 	return 0;

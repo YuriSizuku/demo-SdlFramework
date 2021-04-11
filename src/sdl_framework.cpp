@@ -1,10 +1,97 @@
 #include "sdl_framework.hpp"
 /*Util start*/
 #ifdef USE_OPENGL
-Camera ExploreEvent(SDL_Event* event, const Camera& camera)
+bool Explore3DEventSDL(SDL_Event* eventSDL,Camera& camera,
+	float stepPos, float stepAngle, float stepFov)
 {
-	Camera camera2;
-	return camera2;
+	if (eventSDL->type != SDL_KEYDOWN && eventSDL->type != SDL_KEYUP) return false;
+	
+	SDL_Scancode scancode = eventSDL->key.keysym.scancode;
+	bool flag = true;
+	float dt = 1.f;
+	glm::vec3 dpos(glm::vec3(0));
+	glm::vec3 dangle(glm::vec3(0));
+	float dfov = 0.f;
+	glm::vec3 forward(
+		cos(camera.angle.p) * cos(camera.angle.y),
+		sin(camera.angle.p),
+		cos(camera.angle.p) * sin(camera.angle.y));
+	glm::vec3 up(sin(camera.angle.r), cos(camera.angle.r), 0.f);
+	up = up - forward* glm::dot(forward, up) / glm::dot(forward, forward);
+	glm::vec3 right = glm::normalize(glm::cross(forward, up)); // the right direction from object
+	if (eventSDL->type == SDL_KEYDOWN)
+	{
+		switch(scancode)
+		{
+		// position
+		case SDL_SCANCODE_W: // w is go forward, default is goto -z
+			dpos += dt * stepPos * forward;
+			break;
+		case SDL_SCANCODE_A: 
+			dpos -= dt * stepPos * right;
+			break;
+		case SDL_SCANCODE_S:
+			dpos -= dt * stepPos * forward;
+			break;
+		case SDL_SCANCODE_D:
+			dpos += dt * stepPos * right;
+			break;
+		case SDL_SCANCODE_Q:
+			dpos -= dt * stepPos * up;
+			break;
+		case SDL_SCANCODE_E:
+			dpos += dt * stepPos * up;
+			break;
+		// rotate
+		case SDL_SCANCODE_I:
+			dangle.p += dt * stepAngle;
+			break;
+		case SDL_SCANCODE_J:
+			dangle.y -= dt * stepAngle;
+			break;
+		case SDL_SCANCODE_K:
+			dangle.p -= dt * stepAngle;
+			break;
+		case SDL_SCANCODE_L:
+			dangle.y += dt * stepAngle;
+			break;
+		case SDL_SCANCODE_U:
+			dangle.r += dt * stepAngle;
+			break;
+		case SDL_SCANCODE_O:
+			dangle.r -= dt * stepAngle;
+			break;
+		// fov
+		case SDL_SCANCODE_Z:
+			dfov -= dt * stepFov;
+			break;
+		case SDL_SCANCODE_C:
+			dfov += dt * stepFov;
+			break;
+		default:
+			flag = false;
+			break;
+		}
+	}
+	if (flag)
+	{
+		camera.pos += dpos;
+		camera.angle += dangle;
+		camera.fov += dfov;
+		for (int i = 0; i < 3; i++)
+		{
+			while (camera.angle[i] > glm::radians(180.f)) 
+				camera.angle[i] -= glm::radians(360.f);
+			while (camera.angle[i] < glm::radians(-180.f))
+				camera.angle[i] += glm::radians(360.f);
+		}
+		while (camera.fov > glm::radians(180.f))
+			camera.fov -= glm::radians(360.f);
+		while (camera.fov < glm::radians(-180.f))
+			camera.fov += glm::radians(360.f);
+		
+	}
+	return flag;
 }
 #endif
 /*Util end*/
@@ -371,9 +458,6 @@ void CAppSDL::run()
 		}
 		m_lastRenderTicks = SDL_GetTicks();
 	}
-#if(defined(_WIN32) || defined(_DEBUG))
-	_CrtCheckMemory();
-#endif
 }
 
 bool CAppSDL::enableGL()

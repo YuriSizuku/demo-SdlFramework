@@ -16,11 +16,6 @@ using std::string;
 using std::cout;
 using std::endl;
 using std::shared_ptr;
-#ifdef _WIN32
-#define SEP '\\'
-#else
-#define SEP '/'
-#endif
 
 GLenum _glCheckError(const char* file, int line);
 #ifdef _DEBUG
@@ -42,14 +37,16 @@ typedef struct Vertex
 	glm::vec3 tangent;
 }Vertex;
 
+// a camera struct combined with view and porject matrix
 typedef struct Camera
 {
 	glm::vec3 pos = {0.f,0.f,3.f};
-	glm::vec3 angle = {glm::radians(-90.f),glm::radians(0.f),glm::radians(0.f) };
-	float fov = glm::radians(45.f);
+	glm::vec3 angle = {glm::radians(0.f),glm::radians(-90.f),glm::radians(0.f) }; // roll, yaw, pitch
+	float fov = glm::radians(45.f), aspect=16.f/9.f, zNear=0.1f, zFar=100.f;
 }Camera;
 
 glm::mat4 CalcView(const Camera& camera);
+glm::mat4 CalcProject(const Camera& camera);
 glm::vec3 CalcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
 	const glm::vec2& edgeST1, const glm::vec2& edgeST2);
 glm::vec3 CalcNormal(const glm::vec3& edge1, glm::vec3& edge2);
@@ -99,8 +96,9 @@ public:
 	GLenum getTarget();
 	GLenum getActiveIndex();
 	void getTexImage(GLint level, GLenum format, GLenum type, void* pixels);
-	GLenum active(GLenum texture); // < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS -1
+	GLenum active(GLenum aciveIndex); // < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS -1
 	GLenum active(); // return the previous activeIndex
+	void bind();
 	virtual ~CTextureGL();
 };
 
@@ -130,18 +128,18 @@ public:
 	virtual ~CTexture3DGL();
 };
 
-class CTextureCubeMapGL : public CTextureGL
+class CTextureCubeGL : public CTextureGL
 {
 public:
-	CTextureCubeMapGL(GLsizei width, GLsizei height, 
+	CTextureCubeGL(GLsizei width, GLsizei height, 
 		GLint internalFormat = GL_RGBA);
 	void texImage2DI(GLenum i, GLint level, GLint internalFormat,
 		GLsizei width, GLsizei height, GLint border,
 		GLenum format, GLenum type, const GLvoid* data);
-	virtual ~CTextureCubeMapGL();
+	virtual ~CTextureCubeGL();
 };
 
-// a object3dgl may contains vao, vbo, ebo, textures and a rendering shader
+// a object3dgl may contains vao, vbo, ebo, textures and shaders for each layer
 // also have a pysical component and extra info,such as id, type, status
 class CObject3DGL
 {
@@ -158,8 +156,9 @@ public:
 	int m_type = 0, m_id = 0, m_status=0;
 	shared_ptr<void*> m_pPhysicsRelated=nullptr;
 protected:
-	virtual bool beforeDrawObject(int shaderIndex); // set unifroms and values here
-	virtual bool afterDrawObject(int shaderIndex, bool drawed);
+	// set unifroms and values here
+	virtual bool beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader);
+	virtual bool afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed);
 public:
 	CObject3DGL();
 	CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader=nullptr); 
@@ -184,51 +183,83 @@ public:
 	bool removeTexture(string name);
 
 	virtual ~CObject3DGL();
-	virtual void draw(int shaderIndex=0);
+	virtual void draw(int shaderIndex=0, shared_ptr<CShaderGL> shader=nullptr);
 };
 
-// each layer contains many objects,  as well as textures, lights to render a frame
+// use multi layer for defered rendering, inFrameBuffer -> outFrameBuffer
 class CLayerGL
 {
 protected:
 	CSceneGL& m_scene;
 	size_t m_layerIndex;
+	shared_ptr<CTextureGL> m_inFrameBuffer, m_outFrameBuffer; // in Frame is the from last
 protected:
+	void _draw(shared_ptr<CShaderGL> shader);
 	virtual bool beforeDrawLayer(); // set unifroms and values here
 	virtual bool afterDrawLayer(bool drawed);
 public:
-	CLayerGL(CSceneGL& scene);
+	CLayerGL(CSceneGL& scene, shared_ptr<CTextureGL> outFrameBuffer = nullptr);
+	void setInFramebuffer(shared_ptr<CTextureGL> inFrameBuffer);
+	shared_ptr<CTextureGL> getOutFrameBuffer();
 	virtual ~CLayerGL();
 	virtual void draw();
 };
 
+// generate the shadow map by every light, point light, direction light
+// combine all light shadow positions to shadowMapTexture (in clip space)
 class CShadowMapLayerGL : public CLayerGL
 {
 private:
-	Light* m_currentLight=NULL;
+	shared_ptr<CTextureGL> m_shadowMapTexture;
 public:
+	void genLightShadowMap(Light* light);
+	CShadowMapLayerGL(CSceneGL& scene, shared_ptr<CTextureGL> shadowMapTexture); 
+	virtual ~CShadowMapLayerGL();
+	virtual void draw();
 };
 
+// Dynamic Environment Mapping: viewing to each direction (without shadow)
+// generate the enviroment map(cube map) by randering every object in 6 directions
 class CEnviromentLayerGL : public CLayerGL
 {
 private:
-	shared_ptr<CObject3DGL> m_currentObject;
+	shared_ptr<CTextureCubeGL> m_enviromentMapTexture;
 public:
+	CEnviromentLayerGL(CSceneGL& scene, shared_ptr<CTextureCubeGL> m_enviromentMapTexture);
+	virtual ~CEnviromentLayerGL();
+	virtual void draw();
 };
 
-class CBlendLayerGL : public CLayerGL
+// blend all textures(such as shallow, reflect, sky box) for defered rendering  
+class CBlendLayerGL :public CLayerGL
 {
-
+private:
+	vector<shared_ptr<CTextureGL>> m_textures;
+public:
+	CBlendLayerGL(CSceneGL& scene, vector<shared_ptr<CTextureGL>>& textures);
+	virtual ~CBlendLayerGL();
+	virtual void draw();
 };
 
-class CDebugNormalLayerGL : public CLayerGL
+// use the debug shader for output
+class CDebugLayerGL : public CLayerGL
 {
-protected:
+private:
 	shared_ptr<CShaderGL> m_normalShader;
 public:
-	CDebugNormalLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> normalShader);
+	CDebugLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> normalShader);
+	virtual ~CDebugLayerGL();
+	virtual void draw();
 };
 
+// generate a cube in the light position
+class CDebugLightLayerGL : public CDebugLayerGL
+{
+public:
+	CDebugLightLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader);
+	virtual ~CDebugLightLayerGL();
+	virtual void draw();
+};
 
 // A scene contains multi layers for defered render
 class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
@@ -241,17 +272,26 @@ protected:
 	map<string, shared_ptr<CTextureGL>> m_Gbuffer;
 	glm::mat4 m_view = glm::mat4(1);
 	glm::mat4 m_project = glm::mat4(1);
+	Camera m_camera; // camera -> view, project
 public:
 	CSceneGL();
 	CSceneGL(string shaderName, string shaderDir="./shader");
 	
-	// set get matrix, shaderName!="" will also update the uniform matrix data
-	void setView(const glm::mat4& view, string shaderName=""); 
-	void setView(string shaderName);
+	// view, project matrix, shaderName!="" will also update the uniform matrix data
+	void setMatrix(const glm::mat4& matrix, string matrixName, string shaderName);
+	void setView(const glm::mat4& view); 
+	void setView(const glm::mat4& view, string shaderName, bool updateMatrix = true);
+	void setView(string shaderName="");
 	glm::mat4& getView();
-	void setProject(const glm::mat4& project, string shaderName="");
-	void setProject(string shaderName);
+	void setProject(const glm::mat4& project);
+	void setProject(const glm::mat4& project, string shaderName, bool updateMatrix = true);
+	void setProject(string shaderName="");
 	glm::mat4& getProject();
+	void setCamera(const Camera& camera, bool updateMatrix = true);
+	void setCamera(const Camera& camera, string shaderName,
+		bool updateMatrix = true, bool updateCamera=true);
+	void setCamera(string shaderName = "", bool updateMatrix = true);
+	Camera& getCamera();
 	
 	// scene asset 
 	vector<shared_ptr<CLayerGL>>& getLayers();

@@ -35,7 +35,18 @@ GLenum _glCheckError(const char* file, int line)
 
 glm::mat4 CalcView(const Camera& camera)
 {
-	return glm::mat4(1);
+	// roll, yaw, pitch
+	glm::vec3 direction( // the camera look at direction
+		cos(camera.angle.p) * cos(camera.angle.y),
+		sin(camera.angle.p),
+		cos(camera.angle.p) * sin(camera.angle.y));
+	glm::vec3 up(sin(camera.angle.r), cos(camera.angle.r), 0.f); // angle start is 90
+	return glm::lookAt(camera.pos, camera.pos + direction, up);
+}
+
+glm::mat4 CalcProject(const Camera& camera)
+{
+	return glm::perspective(camera.fov, camera.aspect, camera.zNear, camera.zFar);
 }
 
 glm::vec3 CalcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
@@ -357,36 +368,40 @@ bool CObject3DGL::removeTexture(string textureName)
 	return true;
 }
 
-bool CObject3DGL::beforeDrawObject(int shaderIndex)
+bool CObject3DGL::beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader)
 {
 	glCheckError();
 	return true;
 }
 
-bool CObject3DGL::afterDrawObject(int shaderIndex, bool drawed)
+bool CObject3DGL::afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
 {
 	glCheckError();
 	return true;
 }
 
 
-void CObject3DGL::draw(int shaderIndex)
+void CObject3DGL::draw(int shaderIndex, shared_ptr<CShaderGL> shader)
 {
 	bool drawed = false;
+	shared_ptr<CShaderGL> currentShader = shader;
 	glBindVertexArray(m_vao);
-	if (m_shaders.find(shaderIndex)!=m_shaders.end())
+	if (currentShader==nullptr)
 	{
-		// update the model martrix every time, because the shader can be shared
-		m_shaders[shaderIndex]->setUniformMat4fv("model", glm::value_ptr(m_model));
-		m_shaders[shaderIndex]->use();
+		if (m_shaders.find(shaderIndex) != m_shaders.end())
+			currentShader = m_shaders[shaderIndex];
 	}
-	if (beforeDrawObject(shaderIndex))
+	
+	// update the model martrix every time, because the shader can be shared
+	currentShader->setUniformMat4fv("model", glm::value_ptr(m_model));
+	currentShader->use();
+	if (beforeDrawObject(shaderIndex, shader))
 	{
 		if (m_ebo != -1) glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0);
 		else glDrawArrays(m_drawMode, 0, m_vboCount);
 		drawed = true;
 	}
-	afterDrawObject(shaderIndex, drawed);
+	afterDrawObject(shaderIndex, shader, drawed);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
@@ -394,7 +409,8 @@ void CObject3DGL::draw(int shaderIndex)
 /*CObject3DGL end*/
 
 /*CLayerGL start*/
-CLayerGL::CLayerGL(CSceneGL& scene):m_scene(scene)
+CLayerGL::CLayerGL(CSceneGL& scene,shared_ptr<CTextureGL> outFrameBuffer):
+m_scene(scene),m_outFrameBuffer(outFrameBuffer)
 {
 	m_layerIndex = scene.getLayers().size();
 }
@@ -402,6 +418,34 @@ CLayerGL::CLayerGL(CSceneGL& scene):m_scene(scene)
 CLayerGL::~CLayerGL()
 {
 
+}
+
+void CLayerGL::setInFramebuffer(shared_ptr<CTextureGL> inFrameBuffer)
+{
+	m_inFrameBuffer = inFrameBuffer;
+}
+
+shared_ptr<CTextureGL> CLayerGL::getOutFrameBuffer()
+{
+	return m_outFrameBuffer;
+}
+
+void CLayerGL::_draw(shared_ptr<CShaderGL> shader)
+{
+	auto m_objects = m_scene.getObjects();
+	bool drawed = false;
+	if (beforeDrawLayer())
+	{
+		for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
+		{
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			{
+				(*it2)->draw(m_layerIndex, shader);
+			}
+		}
+		drawed = true;
+	}
+	afterDrawLayer(drawed);
 }
 
 bool CLayerGL::beforeDrawLayer()
@@ -416,22 +460,27 @@ bool CLayerGL::afterDrawLayer(bool drawed)
 
 void CLayerGL::draw()
 {
-	auto m_objects = m_scene.getObjects();
-	bool drawed = false;
-	if (beforeDrawLayer())
-	{
-		for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
-		{
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				(*it2)->draw(m_layerIndex);
-			}
-		}
-		drawed = true;
-	}
-	afterDrawLayer(drawed);
+	_draw(nullptr);
 }
 /*CLayerGL end*/
+
+/*CDebugNormalLayerGL*/
+CDebugLayerGL::CDebugLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> normalShader)
+:CLayerGL(scene), m_normalShader(normalShader)
+{
+
+}
+
+CDebugLayerGL::~CDebugLayerGL()
+{
+
+}
+
+void CDebugLayerGL::draw()
+{
+	_draw(m_normalShader);
+}
+/*CDebugNormalLayerGL*/
 
 /*CSceneGL start*/
 CSceneGL::CSceneGL()
@@ -455,23 +504,40 @@ CSceneGL::~CSceneGL()
 
 }
 
-void CSceneGL::setView(const glm::mat4& view, string shaderName)
+void CSceneGL::setMatrix(const glm::mat4& matrix, string matrixName, string shaderName)
 {
-	m_view = view;
 	if (shaderName != "")
 	{
-		setView(shaderName);
+		if (m_shaders.find(shaderName) == m_shaders.end())
+		{
+			cerr << "ERROR CSceneGL::setView program " << shaderName << " not exist" << endl;
+			return;
+		}
+		m_shaders[shaderName]->setUniformMat4fv(matrixName, glm::value_ptr(matrix));
 	}
+	else
+	{
+		for (auto it : m_shaders)
+		{
+			it.second->setUniformMat4fv(matrixName, glm::value_ptr(matrix));
+		}
+	}
+}
+
+void CSceneGL::setView(const glm::mat4& view)
+{
+	m_view = view;
+}
+
+void CSceneGL::setView(const glm::mat4& view, string shaderName, bool updateMatrix)
+{
+	if(updateMatrix) setView(view);
+	setMatrix(view, "view", shaderName);
 }
 
 void CSceneGL::setView(string shaderName)
 {
-	if (m_shaders.find(shaderName) == m_shaders.end())
-	{
-		cout << "ERROR CSceneGL::setView program " << shaderName << " not exist" << endl;
-		return;
-	}
-	m_shaders[shaderName]->setUniformMat4fv("view", glm::value_ptr(m_view));
+	setView(m_view, shaderName, false);
 }
 
 glm::mat4& CSceneGL::getView()
@@ -479,23 +545,20 @@ glm::mat4& CSceneGL::getView()
 	return m_view;
 }
 
-void CSceneGL::setProject(const glm::mat4& project, string shaderName)
+void CSceneGL::setProject(const glm::mat4& project)
 {
 	m_project = project;
-	if (shaderName != "")
-	{
-		setProject(shaderName);
-	}
+}
+
+void CSceneGL::setProject(const glm::mat4& project, string shaderName, bool updateMatrix)
+{
+	if(updateMatrix) setProject(project);
+	setMatrix(project, "project", shaderName);
 }
 
 void CSceneGL::setProject(string shaderName)
 {
-	if (m_shaders.find(shaderName) == m_shaders.end())
-	{
-		cerr << "ERROR CSceneGL::setProject program " << shaderName << " not exist" << endl;
-		return;
-	}
-	m_shaders[shaderName]->setUniformMat4fv("project", glm::value_ptr(m_project));
+	setProject(m_project, shaderName, false);
 }
 
 glm::mat4& CSceneGL::getProject()
@@ -503,20 +566,34 @@ glm::mat4& CSceneGL::getProject()
 	return m_project;
 }
 
-map<string, shared_ptr<CTextureGL>>& CSceneGL::getTextures()
+void CSceneGL::setCamera(const Camera& camera, bool updateMatrix)
 {
-	return m_textures;
+	m_camera = camera;
+	if (updateMatrix)
+	{
+		m_view = ::CalcView(camera);
+		m_project = ::CalcProject(camera);
+	}
 }
 
-bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
+void CSceneGL::setCamera(const Camera& camera, string shaderName, 
+	bool updateMatrix, bool updateCamera)
 {
-	if (m_textures.find(textureName) != m_textures.end())
-	{
-		cerr << "ERROR CSceneGL::addTexture " << textureName << " already exist!" << endl;
-		return false;
-	}
-	m_textures[textureName] = texture;
-	return true;
+	if (updateCamera) m_camera = camera;
+	auto view = ::CalcView(camera);
+	auto project = ::CalcProject(camera);
+	setView(view, shaderName, updateMatrix);
+	setProject(project, shaderName, updateMatrix);
+}
+
+void CSceneGL::setCamera(string shaderName, bool updateMatrix)
+{
+	setCamera(m_camera, shaderName, updateMatrix, false);
+}
+
+Camera& CSceneGL::getCamera()
+{
+	return m_camera;
 }
 
 vector<shared_ptr<CLayerGL>>& CSceneGL::getLayers()
@@ -577,6 +654,22 @@ void CSceneGL::addShader(string shaderName, string shaderDir)
 		CShaderGL(vertPath, fragPath, geometryPath));
 }
 
+map<string, shared_ptr<CTextureGL>>& CSceneGL::getTextures()
+{
+	return m_textures;
+}
+
+bool CSceneGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
+{
+	if (m_textures.find(textureName) != m_textures.end())
+	{
+		cerr << "ERROR CSceneGL::addTexture " << textureName << " already exist!" << endl;
+		return false;
+	}
+	m_textures[textureName] = texture;
+	return true;
+}
+
 bool CSceneGL::removeTexture(string textureName)
 {
 	if (m_textures.find(textureName) == m_textures.end())
@@ -590,11 +683,21 @@ bool CSceneGL::removeTexture(string textureName)
 
 void CSceneGL::render()
 {
+	if (m_layers.size() <= 0)
+	{
+		cerr << "ERROR CSceneGL::render has no layers" << endl;
+		return;
+	}
 	glCheckError();
+	shared_ptr<CTextureGL> inFrameBuffer = nullptr;
 	for (auto layer : m_layers)
 	{
+		if (layer == nullptr) continue;
+		layer->setInFramebuffer(inFrameBuffer);
 		layer->draw();
+		inFrameBuffer = layer->getOutFrameBuffer();
 	}
+	
 }
 /*CSceneGL end*/
 
@@ -639,14 +742,7 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 	GLenum usage) :CObject3DGL(model, shader)
 {
 	const int EACH_COUNT = 11;
-	GLfloat vbo_buf[EACH_COUNT * 36] = {
-	     0.5f,  0.5f, 0.5f, 0,   0,   0, 0, 0, 0, 0, 0,
-		-0.5f,  0.5f, 0.5f, 1.f, 0,   0, 0, 0, 0, 0, 0,
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 0, 0, 0, 0, 0, 0,
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 0, 0, 0, 0, 0, 0,
-		 0.5f, -0.5f, 0.5f, 0,   1.f, 0, 0, 0, 0, 0, 0,
-		 0.5f,  0.5f, 0.5f, 0,   0,   0, 0, 0, 0, 0, 0,
-	};
+	GLfloat vbo_buf[EACH_COUNT * 36];
 	GLint face_ebo_buf[] = { 0,1,2,2,3,0 };
 
 	glm::vec2 texcoords[4] = { 

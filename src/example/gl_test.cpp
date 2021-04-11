@@ -3,71 +3,104 @@
 #include "gl_object3d.hpp"
 using std::shared_ptr;
 
-const string SHADER_DEFAULT = "default";
-const string SHADER_NORMAL = "normal_line";
-const string SHADER_DIR = "./assets";
-
+const char SHADER_DEFAULT[] = "default";
+const char SHADER_NORMAL[] = "debug_normal";
+const char SHADER_DIR[] = "./assets";
 
 class CSimpleScene : public CSceneGL
 {
 public:
     CSimpleScene(): CSceneGL(SHADER_DEFAULT, SHADER_DIR)
     {
-        addShader(SHADER_NORMAL, SHADER_DIR);
-        setProject(glm::perspective(glm::radians(45.f), 16.f / 9.f, 0.1f, 100.f), SHADER_DEFAULT);
-        setView(glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, -3.f)), SHADER_DEFAULT); // stand at (0,0,3f)
-        setProject(SHADER_NORMAL);
-        setView(SHADER_NORMAL);
-        glm::mat4 model;
+        //prepare shaders
+        // glm::perspective(glm::radians(45.f), 16.f / 9.f, 0.1f, 100.f)
+        //setView(glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, -3.f)), SHADER_DEFAULT); // stand at (0,0,3f)
         //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
-        
+        m_camera.fov = glm::radians(45.f);
+        addShader(SHADER_NORMAL, SHADER_DIR);
+        setCamera();
+        //setView(glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, -8.f)), ""); // stand at (0,0,3f)
+
+        // add layers
+        auto layer = shared_ptr<CLayerGL>(new CLayerGL(*this));
+        auto layer_normal = shared_ptr<CLayerGL>(new CDebugLayerGL(*this, getShaders()[SHADER_NORMAL]));
+        this->pushLayer(layer);
+        this->pushLayer(layer_normal);
+
+        glm::mat4 model;
         // a plane
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, -1.f, 0.f));
+        model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0)) ;
         model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
-        model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0));
         auto plane = shared_ptr<CPlaneGL>(new CPlaneGL());
         plane->setShader(m_shaders[SHADER_DEFAULT]); 
         plane->setModel(model);   
-        m_objects.pushObject(plane);  
+        //m_objects.pushObject(plane);  
 
         // a cube 
-        model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f)); 
+        model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f));
+        model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); // then pitch
+        model = glm::rotate(model, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f)); // yaw first
         model = glm::scale(model, glm::vec3(1.0f, 0.5f, 0.5f));
-        model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); 
-        model = glm::rotate(model, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f));
         auto cube = shared_ptr<CCubeGL>(new CCubeGL());
         cube->setShader(m_shaders[SHADER_DEFAULT]); 
         cube->setModel(model);
-        m_objects.pushObject(cube);      
+        m_objects.pushObject(cube);
 
-        // cube normal geomotry demo
-        auto cube_gemo = shared_ptr<CCubeGL>(new CCubeGL());
-        cube_gemo->setShader(m_shaders[SHADER_NORMAL]); 
-        cube_gemo->setModel(model); 
-        m_objects.pushObject(cube_gemo);   
+        GLint viewPort[4];
+        glGetIntegerv(GL_VIEWPORT, viewPort);
     }
-    virtual ~CSimpleScene()
+
+    void handleEvent(void* event) 
     {
-      
+        bool ret = Explore3DEventSDL(static_cast<SDL_Event*>(event), m_camera, 
+            0.1f, glm::radians(1.f), glm::radians(1.f));
+        if (ret)
+        {
+            SDL_Log("pos(%f %f %f), angle(p=%f y=%f r=%f)", 
+                m_camera.pos.x, m_camera.pos.y, m_camera.pos.z, 
+                glm::degrees(m_camera.angle.p), glm::degrees(m_camera.angle.y), glm::degrees(m_camera.angle.r));
+        }
+        if (static_cast<SDL_Event*>(event)->key.keysym.scancode == SDL_SCANCODE_R)
+        {
+            Camera camera;
+            m_camera = camera;
+        }
+    }
+
+    void render()
+    {
+       setCamera();
+       CSceneGL::render();
     }
 };
 
-int main(int argc, char* argv[])
+void start()
 {
+    string title = "gl test";
     CAppSDL app;
     app.prepareGL();
-    app.prepareWindow("gl test", 1280, 720);
-    
+    app.enableGL(true);
+    app.prepareWindow(title, 1280, 720);
+
     auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
     auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
     auto scene = shared_ptr<CSceneGL>(new CSimpleScene());
-    auto layer = shared_ptr<CLayerGL>(new CLayerGL(*scene));
-    scene->pushLayer(layer);
     stage->pushScene(scene);
     stage_manager->pushStage(stage);
     app.prepareStageManager(stage_manager);
     app.setBackground(0xff, 0xc0, 0xcb);
-    app.setBackground(0xff, 0xff, 0xff);
+    //app.setBackground(0xff, 0xff, 0xff);
+    //app.setFps(288);
     app.run();
+    SDL_Log("%s exit", title.c_str());
+}
+
+int main(int argc, char* argv[])
+{
+    start();
+#if(defined(_WIN32) || defined(_DEBUG))
+    _CrtDumpMemoryLeaks(); // const string will not destruct before main end
+#endif
     return 0;
 }
