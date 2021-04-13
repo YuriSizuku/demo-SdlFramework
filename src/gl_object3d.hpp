@@ -52,6 +52,12 @@ glm::vec3 CalcTangent(const glm::vec3& edge1, const glm::vec3& edge2,
 glm::vec3 CalcNormal(const glm::vec3& edge1, glm::vec3& edge2);
 
 class CSceneGL;
+class CObject3DGL;
+
+class CModelLoader
+{
+
+};
 
 class CShaderGL
 {
@@ -77,11 +83,6 @@ public:
 		GLintptr offset, GLsizei size, const void* data);
 	void use();
 	virtual ~CShaderGL();
-};
-
-class CModelLoader
-{
-
 };
 
 class CTextureGL
@@ -139,66 +140,21 @@ public:
 	virtual ~CTextureCubeGL();
 };
 
-// a object3dgl may contains vao, vbo, ebo, textures and shaders for each layer
-// also have a pysical component and extra info,such as id, type, status
-class CObject3DGL
-{
-protected:
-	GLuint m_vao=-1, m_vbo=-1, m_ebo=-1; // bind vao first, then vbo
-	GLsizei m_vboCount = 0, m_eboCount = 0;
-	GLenum m_drawMode = GL_TRIANGLES;
-	// a object can using multi shader for different layer
-	// use map is about someof the layer may not need to use the object
-	map<size_t, shared_ptr<CShaderGL>> m_shaders; 
-	map<string, shared_ptr<CTextureGL>> m_textures;
-	glm::mat4 m_model = glm::mat4(1);
-public:
-	int m_type = 0, m_id = 0, m_status=0;
-	shared_ptr<void*> m_pPhysicsRelated=nullptr;
-protected:
-	// set unifroms and values here
-	virtual bool beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader);
-	virtual bool afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed);
-public:
-	CObject3DGL();
-	CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader=nullptr); 
-	glm::mat4& getModel();
-	void setModel(const glm::mat4& model);
-	void setDrawMode(GLenum drawMode);
-
-	// VAO VBO EBO
-	GLuint getVAO();
-	void fillVAO(vector<GLint>& countIndex =vector<GLint>({3,2,3,3}));
-	GLuint getVBO();
-	void fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
-	GLuint getEBO();
-	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage=GL_STATIC_DRAW);
-	
-	// shader, texture
-	map<size_t, shared_ptr<CShaderGL>>&  getShaders();
-	void setShader(shared_ptr<CShaderGL> shader, int index=0);
-	bool removeShader(int index = 0);
-	map<string, shared_ptr<CTextureGL>>& getTextures();
-	bool addTexture(string name, shared_ptr<CTextureGL> texture);
-	bool removeTexture(string name);
-
-	virtual ~CObject3DGL();
-	virtual void draw(int shaderIndex=0, shared_ptr<CShaderGL> shader=nullptr);
-};
-
 // use multi layer for defered rendering, inFrameBuffer -> outFrameBuffer
 class CLayerGL
 {
 protected:
 	CSceneGL& m_scene;
 	size_t m_layerIndex;
+	shared_ptr<CShaderGL> m_layerShader;
 	shared_ptr<CTextureGL> m_inFrameBuffer, m_outFrameBuffer; // in Frame is the from last
 protected:
-	void _draw(shared_ptr<CShaderGL> shader);
+	virtual void drawSceneObjects(shared_ptr<CShaderGL> shader);
 	virtual bool beforeDrawLayer(); // set unifroms and values here
 	virtual bool afterDrawLayer(bool drawed);
 public:
-	CLayerGL(CSceneGL& scene, shared_ptr<CTextureGL> outFrameBuffer = nullptr);
+	CLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader=nullptr,
+		shared_ptr<CTextureGL> outFrameBuffer = nullptr);
 	void setInFramebuffer(shared_ptr<CTextureGL> inFrameBuffer);
 	shared_ptr<CTextureGL> getOutFrameBuffer();
 	virtual ~CLayerGL();
@@ -241,23 +197,16 @@ public:
 	virtual void draw();
 };
 
-// use the debug shader for output
-class CDebugLayerGL : public CLayerGL
+// show the small window for debug informations
+class CLayerHudGL : public CLayerGL
 {
-private:
-	shared_ptr<CShaderGL> m_normalShader;
+protected:
+	GLint m_orgViewport[4], m_hudViewPort[4];
 public:
-	CDebugLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> normalShader);
-	virtual ~CDebugLayerGL();
-	virtual void draw();
-};
-
-// generate a cube in the light position
-class CDebugLightLayerGL : public CDebugLayerGL
-{
-public:
-	CDebugLightLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader);
-	virtual ~CDebugLightLayerGL();
+	CLayerHudGL(CSceneGL& scene, 
+		shared_ptr<CShaderGL> hudShader, GLint hudViewPort[4] = NULL);
+	virtual ~CLayerHudGL();
+	virtual void drawHud();
 	virtual void draw();
 };
 
@@ -265,6 +214,7 @@ public:
 class CSceneGL:public CScene<CMapList<shared_ptr<CObject3DGL>>>
 {
 protected:
+	string m_lastShaderDir;
 	vector<shared_ptr<CLayerGL>> m_layers;
 	vector<Light> m_lights;
 	map<string, shared_ptr<CShaderGL>> m_shaders;
@@ -275,7 +225,7 @@ protected:
 	Camera m_camera; // camera -> view, project
 public:
 	CSceneGL();
-	CSceneGL(string shaderName, string shaderDir="./shader");
+	CSceneGL(string shaderName, string shaderDir);
 	
 	// view, project matrix, shaderName!="" will also update the uniform matrix data
 	void setMatrix(const glm::mat4& matrix, string matrixName, string shaderName);
@@ -299,7 +249,8 @@ public:
 	vector<Light>& getLights();
 	void pushLight(Light light);
 	map<string, shared_ptr<CShaderGL>>& getShaders();
-	void addShader(string shaderName, string shaderDir="./shader"); // default.vert, default.frag, default.geom
+	void addShader(string shaderName, string shaderDir); // default.vert, default.frag, default.geom
+	void addShader(string shaderName);
 	map<string, shared_ptr<CTextureGL>>& getTextures();
 	bool addTexture(string textureName, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string textureName);
@@ -316,20 +267,97 @@ public:
 	virtual ~CSceneGL();
 };
 
+// a object3dgl may contains vao, vbo, ebo, textures and shaders for each layer
+// also have a pysical component and extra info,such as id, type, status
+class CObject3DGL
+{
+protected:
+	GLuint m_vao = -1, m_vbo = -1, m_ebo = -1; // bind vao first, then vbo
+	GLsizei m_vboCount = 0, m_eboCount = 0;
+	GLenum m_drawMode = GL_TRIANGLES;
+	// a object can using multi shader for different layer
+	// use map is about someof the layer may not need to use the object
+	map<size_t, shared_ptr<CShaderGL>> m_shaders;
+	map<string, shared_ptr<CTextureGL>> m_textures;
+	glm::mat4 m_model = glm::mat4(1);
+public:
+	int m_type = 0, m_id = 0, m_status = 0;
+	shared_ptr<void*> m_pPhysicsRelated = nullptr;
+	static const int INDEX_COUNT = 11;
+	static const int TEXCOORD_INDEX = 3;
+	static const int NORMAL_INDEX = 5;
+	static const int TANGENT_INDEX = 8;
+protected:
+	// set unifroms and values here
+	virtual bool beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader);
+	virtual bool afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed);
+public:
+	CObject3DGL();
+	CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader = nullptr);
+	glm::mat4& getModel();
+	void setModel(const glm::mat4& model);
+	void setDrawMode(GLenum drawMode);
+
+	// VAO VBO EBO
+	GLuint getVAO();
+	void fillVAO(vector<GLint>& countIndexs = vector<GLint>({ 3,2,3,3 }));
+	GLuint getVBO();
+	void fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage = GL_STATIC_DRAW);
+	GLuint getEBO();
+	void fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage = GL_STATIC_DRAW);
+
+	// shader, texture
+	map<size_t, shared_ptr<CShaderGL>>& getShaders();
+	void setShader(shared_ptr<CShaderGL> shader, int index = 0);
+	bool removeShader(int index = 0);
+	map<string, shared_ptr<CTextureGL>>& getTextures();
+	bool addTexture(string name, shared_ptr<CTextureGL> texture);
+	bool removeTexture(string name);
+
+	virtual ~CObject3DGL();
+	// draw the obejct using the m_shaders, or extern shader
+	virtual void draw(int shaderIndex = 0, shared_ptr<CShaderGL> shader = nullptr);
+};
+
+// the attitude(poster) of the camera
+class CLayerHudAttitude : public CLayerHudGL
+{
+private:
+	CObject3DGL m_attitude = CObject3DGL(glm::mat4(1));
+public:
+	CLayerHudAttitude(CSceneGL& scene,
+		shared_ptr<CShaderGL> attitudeShader, GLint hudViewPort[4] = NULL);
+	virtual void drawHud();
+	virtual ~CLayerHudAttitude();
+};
+
+// generate a cube in the light position
+class CLayerLightGL : public CLayerGL
+{
+public:
+	CLayerLightGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader);
+	virtual ~CLayerLightGL();
+	virtual void draw();
+};
+
 class CPlaneGL:public CObject3DGL
 {
 public:
+	// 4 textcoords
 	CPlaneGL(const glm::mat4& model=glm::mat4(1), 
 		const shared_ptr<CShaderGL> shader = nullptr, 
-		GLenum usage=GL_STATIC_DRAW);
+		GLenum usage = GL_STATIC_DRAW, 
+		map<int, glm::vec2>& texcoords = map<int, glm::vec2>());
 };
 
 class CCubeGL:public CObject3DGL
 {
 public:
+	// 24 textcoords, right, left, top, bottom, back, front
 	CCubeGL(const glm::mat4& model = glm::mat4(1),
 		const shared_ptr<CShaderGL> shader = nullptr,
-		GLenum usage = GL_STATIC_DRAW);
+		GLenum usage = GL_STATIC_DRAW, 
+		map<int, glm::vec2>& texcoords = map<int, glm::vec2>());
 };
 
 class CSphereGL:public CObject3DGL

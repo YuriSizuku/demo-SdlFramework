@@ -8,12 +8,12 @@ uniform mat4 model, view;
 
 out VS_OUT
 {
-    vec3 normal;
+    vec3 aNormal;
 } vs_out;
 
 void main()
 {
     mat3 normalMat = mat3(transpose(inverse(view*model)));
-    vs_out.normal = normalize(normalMat * aNormal);
+    vs_out.aNormal = normalize(normalMat * aNormal);
     gl_Position = view * model * vec4(aPos.xyz, 1.f);
 }

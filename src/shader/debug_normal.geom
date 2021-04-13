@@ -6,7 +6,7 @@ layout(line_strip, max_vertices = 6) out;
 
 in VS_OUT
 {
-    vec3 normal;
+    vec3 aNormal;
 } gs_in[];
 uniform mat4 project;
 
@@ -25,6 +25,6 @@ void main()
 {
     for(int i=0;i<3;i++)
     {
-        emit_line(i,MAGNITUDE*gs_in[i].normal);
+        emit_line(i,MAGNITUDE*gs_in[i].aNormal); // generate the normal line
     }
 }

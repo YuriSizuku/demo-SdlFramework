@@ -8,9 +8,10 @@ uniform mat4 model, view, project;
 
 out VS_OUT
 {
-    vec2 model_texcoord;
-    vec3 model_normal;
-    vec3 model_tangent;
+    vec3 aPos;
+    vec2 aTexcoord;
+    vec3 aNormal;
+    vec3 aTangent;
     vec4 FragPos;
     mat3 worldTBN;
 } vs_out;
@@ -26,9 +27,10 @@ mat3 calculate_worldTBN(mat4 model, vec3 tangent, vec3 normal)
 
 void main()
 {
-    vs_out.model_texcoord = aTexcoord; 
-    vs_out.model_normal = aNormal; 
-    vs_out.model_tangent = aTangent;
+    vs_out.aPos = aPos;
+    vs_out.aTexcoord = aTexcoord; 
+    vs_out.aNormal = aNormal; 
+    vs_out.aTangent = aTangent;
 
     // calculate worldTBN
     vs_out.worldTBN = calculate_worldTBN(model, aTangent, aNormal);
