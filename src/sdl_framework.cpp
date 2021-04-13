@@ -96,6 +96,29 @@ bool Explore3DEventSDL(SDL_Event* eventSDL,Camera& camera,
 #endif
 /*Util end*/
 
+/*CSceneSDL start*/
+CSceneSDL::CSceneSDL(CAppSDL& appSDL) :m_appSDL(appSDL)
+{
+
+}
+
+CSceneSDL::~CSceneSDL()
+{
+
+}
+
+void CSceneSDL::render()
+{
+	for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
+	{
+		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+		{
+			(*it2)->draw();
+		}
+	}
+}
+/*CSceneSDL end*/
+
 /*CStageSDL start*/
 CStageSDL::CStageSDL(CAppSDL& appSDL):m_appSDL(appSDL)
 {

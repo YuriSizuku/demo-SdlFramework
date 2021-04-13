@@ -94,6 +94,12 @@ set(SDL_FRAMEWORK_CODE
 set(GL_FRAMEWORK_CODE
     src/gl_util.h
     src/gl_util.c
+    src/gl_scene.hpp
+    src/gl_scene.cpp
+    src/gl_layers.hpp
+    src/gl_layers.cpp
+    src/gl_assets.hpp
+    src/gl_assets.cpp
     src/gl_object3d.hpp
     src/gl_object3d.cpp)
 

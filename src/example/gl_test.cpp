@@ -1,6 +1,6 @@
 #include<memory>
 #include"sdl_framework.hpp"
-#include "gl_object3d.hpp"
+#include "gl_scene.hpp"
 using std::shared_ptr;
 
 const char SHADER_DEFAULT[] = "default";

@@ -1,29 +1,85 @@
 # SdlFramework
 My simple SDL framework for rendering, updating and event handling.
 
+## 1. Structures
 
+### (1) SDL  part
 
 Currently the class is as below:
+
+**sdl_framework.hpp**
 
 `CAppSDL`:  create window and renderer, contain the global information
 
 `CStageManagerSDL`: manage the game stage, a stage can be a level or menu,  define how to change stage here
 
-`CStageSDL`:  A stage contains many scenes in a level and handles the event if change scene.
+`CStageSDL`:  a stage contains many scenes in a level and handles the event if change scene.
 
-`CSceneSDL|CSceneGL`: A scene contains many objects and determine how objects interact with each other
+`CSceneSDL`: a scene contains many objects and determine how objects interact with each other
 
-`CObject2DSDL|CObject3DGL`: A object used for SDL rendering or OpenGL rendering 
+**sdl_object2d.hpp**
+
+`CObject2DSDL`: a object used for SDL rendering
+
+`CSingleTextureSDL`:  a object with a texture
+
+`CCircleSDL`: simple circle in SDL, for static drawing
+
+### (2) OpenGL part
+
+**gl_scene.hpp** 
+
+`Light`: the light information for rendering lighting
+
+`Vertex`:  defines the structure of vertex attribution
+
+`Camera`: a camera structure with position and Euler angles， as well as the perspective information
+
+`CSceneGL`:  a scene  contains layers or objects for rendering
+
+**gl_layers.hpp**
+
+`CLayerGL`:  the layer for rendering, for using different shaders or defered rendering
+
+`CShadowMapLayerGL(not finished)`:  generate the shadow map by every light, point light, direction light
+
+`CEnviromentLayerGL(not finished)`:  Dynamic Environment Mapping: viewing to each direction (without shadow)
+
+`CBlendLayerGL(not finished)`:  blend all textures(such as shallow, reflect, sky box) for defered rendering  
+
+`CLayerHudGL`: show the small window for debug information as HUD
+
+`CLayerHudAttitude`:  render a small window for viewing the attitude(posture) of the camera
+
+`CLayerLightGL(not finished)`:  generate a cube in the light position for viewing light
+
+**gl_assets.hpp**
+
+`CShaderGL`: a class of shader manager, for loading shaders, compile, link and use program for rendering
+
+`CTextureGL|2DGL|3DGL|CubeGL(not finished)`:  a class of texture manager, for filling texture of reading from texture
+
+**gl_object3d.hpp**
+
+`CObject3DGL`: contains vao, vbo, ebo, textures and shaders for each layer
+
+`CPlaneGL`: a rectangle unit plane in XOY
+
+`CCubeGL`:a unit cube in the center
+
+### (3) Physical part
+
+**physics_object.hpp**
 
 `CPhsicalObject`: This object contains physical information, used for physical engine
 
 
 
-## build
+## 2. build
 
 I use cmake to build the demo.
 
-### Build In windows:  
+### (1) Build on Windows:  
 
  You need either download each libraries below, or download all the requirement in [externlib](https://github.com/YuriSizuku/SdlFramework/releases/download/v0.1/externlib.7z).
 
@@ -47,9 +103,9 @@ cd build_x64
 cmake .. -G "Visual Studio 14 2015" -A x64
 ```
 
-### Build in linux: 
+### (2) Build on Linux: 
 
-Install the requirement and then generate makefile.
+Install the requirement and then generate Makefile.
 
 ```shell
 sudo aptitude install libgl1-mesa-dev
@@ -64,7 +120,9 @@ make
 
 
 
-## circle collision
+## 3. Demos/Games
+
+### (1) circle collision
 
 A simulator for Perfect Elastic Collision, by conservation of momentum and energy.
 
@@ -72,7 +130,7 @@ Download the release demo [circle_collision](https://github.com/YuriSizuku/SdlFr
 
 ![circle_collision](screenshot/circle_collision.gif)
 
-## circle Danmaku
+### (2) circle Danmaku
 
 A Danmaku game whose object is all circle.
 

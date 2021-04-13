@@ -30,17 +30,6 @@ public:
 	virtual void moveTo(float x, float y) = 0;
 };
 
-// A scene contains many objects and determine how objects interact with each other
-class CSceneSDL:public CScene<CMapList<shared_ptr<CObject2DSDL>>>
-{
-protected:
-	CAppSDL& m_appSDL;
-public:
-	CSceneSDL(CAppSDL& appSDL);
-	virtual ~CSceneSDL();
-	virtual void render();
-};
-
 class CSingleTextureSDL : public CObject2DSDL
 {
 protected: 

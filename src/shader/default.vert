@@ -4,7 +4,7 @@ layout (location=1) in vec2 aTexcoord;
 layout (location=2) in vec3 aNormal;
 layout (location=3) in vec3 aTangent;
 
-uniform mat4 model, view, project;
+uniform mat4 model, view, projection;
 
 out VS_OUT
 {
@@ -36,6 +36,6 @@ void main()
     vs_out.worldTBN = calculate_worldTBN(model, aTangent, aNormal);
     
     // calculate vertex position
-    vs_out.FragPos = project * view * model * vec4(aPos.xyz, 1.f);
+    vs_out.FragPos = projection * view * model * vec4(aPos.xyz, 1.f);
     gl_Position = vs_out.FragPos;
 }

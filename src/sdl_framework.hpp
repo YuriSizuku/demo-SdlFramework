@@ -10,7 +10,7 @@
 	#include<GL/glew.h>
 	#ifdef _WIN32
 	#endif
-	#include "gl_object3d.hpp"
+	#include "gl_scene.hpp"
 #endif
 #ifdef _LINUX
 #include <SDL2/SDL.h>
@@ -52,6 +52,17 @@ enum AppStatus
 class CObject2DSDL;
 class CSceneSDL;
 class CAppSDL;
+
+// A scene contains many objects and determine how objects interact with each other
+class CSceneSDL :public CScene<CMapList<shared_ptr<CObject2DSDL>>>
+{
+protected:
+	CAppSDL& m_appSDL;
+public:
+	CSceneSDL(CAppSDL& appSDL);
+	virtual ~CSceneSDL();
+	virtual void render();
+};
 
 // the stage contains multi scenes, handles event
 // must use this class after prepare window

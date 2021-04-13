@@ -8,13 +8,13 @@ in VS_OUT
 {
     vec3 aNormal;
 } gs_in[];
-uniform mat4 project;
+uniform mat4 projection;
 
 void emit_line(int index, vec3 direction)
 {
-    gl_Position = project * gl_in[index].gl_Position;
+    gl_Position = projection * gl_in[index].gl_Position;
     EmitVertex();
-    gl_Position = project * (gl_in[index].gl_Position + vec4(direction, 0.f));
+    gl_Position = projection * (gl_in[index].gl_Position + vec4(direction, 0.f));
     EmitVertex();
     EndPrimitive();
 }
