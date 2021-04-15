@@ -1,9 +1,14 @@
-#include<memory>
-#include"sdl_framework.hpp"
+#include <iostream>
+#include <memory>
+#include "sdl_framework.hpp"
 #include "gl_scene.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 using std::shared_ptr;
+using std::cout;
+using std::endl;
 
-const char SHADER_DEFAULT[] = "default";
+const char SHADER_DEFAULT[] = "test";
 const char SHADER_DIR[] = "./assets";
 
 class CSimpleScene : public CSceneGL
@@ -11,9 +16,15 @@ class CSimpleScene : public CSceneGL
 public:
     CSimpleScene(): CSceneGL(SHADER_DEFAULT, SHADER_DIR)
     {
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        
-         //prepare shaders and layers 
+        // load images
+        int w, h, c;
+        auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);  
+        auto tex = shared_ptr<CTexture2DGL>(new CTexture2DGL(w, h));
+        tex->texImage2D(imgdata);
+        m_textures["misuzu"] = tex;
+        delete[] imgdata; 
+
+        //prepare shaders and layers 
         addShader("debug_normal");
         addShader("debug_attitude");
         setCamera();
@@ -24,28 +35,27 @@ public:
         this->pushLayer(layer_normal);
         this->pushLayer(layer_attitude);
 
-        // a plane
+        // a planeMesh
         glm::mat4 model;
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, -1.f, 0.f));
         model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0)) ;
         model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
-        auto plane = shared_ptr<CPlaneGL>(new CPlaneGL());
-        plane->setShader(m_shaders[SHADER_DEFAULT]); 
-        plane->setModel(model);   
-        m_objects.pushObject(plane);  
+        auto planeMesh = shared_ptr<CPlaneMeshGL>(new CPlaneMeshGL());
+        planeMesh->setShader(m_shaders[SHADER_DEFAULT]); 
+        planeMesh->addTexture("misuzu", tex);
+        auto planeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, planeMesh));
+        m_objects.pushObject(planeObject);
 
         // a cube 
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f));
         model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); // then pitch
         model = glm::rotate(model, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f)); // yaw first
-        model = glm::scale(model, glm::vec3(1.0f, 0.5f, 0.5f));
-        auto cube = shared_ptr<CCubeGL>(new CCubeGL());
-        cube->setShader(m_shaders[SHADER_DEFAULT]); 
-        cube->setModel(model);
-        m_objects.pushObject(cube);
-
-        GLint viewPort[4];
-        glGetIntegerv(GL_VIEWPORT, viewPort);
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 0.5f));
+        auto cubeMesh = shared_ptr<CCubeMeshGL>(new CCubeMeshGL());
+        cubeMesh->setShader(m_shaders[SHADER_DEFAULT]);
+        cubeMesh->addTexture("misuzu", tex);
+        auto cubeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, cubeMesh));
+        m_objects.pushObject(cubeObject);
     }
 
     void handleEvent(void* event)  
@@ -87,6 +97,7 @@ void start()
     stage_manager->pushStage(stage);
     app.prepareStageManager(stage_manager);
     app.setBackground(0xff, 0xc0, 0xcb);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //app.setBackground(0xff, 0xff, 0xff);
     //app.setFps(288);
     app.run();

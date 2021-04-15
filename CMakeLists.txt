@@ -7,12 +7,14 @@ function(config_externlib TARGET_NAME)
     set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL2-2.0.14)
     set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
     set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
+    set(STB_DIR ${EXTERN_LIB_DIR}/stb)
 
     # extern include
     target_include_directories(${TARGET_NAME} PRIVATE
         ${SDL2_DIR}/include
         ${GLM_DIR}/
         ${GLEW_DIR}/include
+        ${STB_DIR}
     )
 
     # extern lib
@@ -117,8 +119,7 @@ config_externlib(${DEMO_NAME})
 set(DEMO_NAME circle_collision)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
-    ${SDL_FRAMEWORK_CODE}
-    ${GL_FRAMEWORK_CODE})
+    ${SDL_FRAMEWORK_CODE})
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})
@@ -127,8 +128,7 @@ config_externlib(${DEMO_NAME})
 set(DEMO_NAME circle_danmaku)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
-    ${SDL_FRAMEWORK_CODE}
-    ${GL_FRAMEWORK_CODE})
+    ${SDL_FRAMEWORK_CODE})
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})

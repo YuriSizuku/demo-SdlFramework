@@ -35,8 +35,22 @@ GLenum _glCheckError(const char* file, int line);
 // The light information for rendering lighting
 typedef struct Light
 {
-
+	glm::vec4 position; // w=0 direction color
+	glm::vec3 color;
+	glm::vec3 attenuation; // point light attenuation coefficient
+	glm::vec3 spotDirection; // for spot 
+	float cutoff, outerCutoff;
 }Light;
+
+// material structure for object with phong rendering
+// http://devernay.free.fr/cours/opengl/materials.html
+typedef struct MaterialPhong
+{
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	float shininess;
+}MaterialPhong;
 
 // defines the structure of vertex attribution
 typedef struct Vertex

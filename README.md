@@ -31,6 +31,8 @@ Currently the class is as below:
 
 `Light`: the light information for rendering lighting
 
+`MaterialPhong`: material structure for object with phong rendering
+
 `Vertex`:  defines the structure of vertex attribution
 
 `Camera`: a camera structure with position and Euler angles， as well as the perspective information
@@ -61,7 +63,9 @@ Currently the class is as below:
 
 **gl_object3d.hpp**
 
-`CObject3DGL`: contains vao, vbo, ebo, textures and shaders for each layer
+`CMeshGL`: contains vao, vbo, ebo, textures and shaders for each layer
+
+`CObject3DGL`:  a 3D object for gl rendering, manage multi meshes
 
 `CPlaneGL`: a rectangle unit plane in XOY
 
@@ -89,7 +93,9 @@ I use cmake to build the demo.
 
 [SDL-2.0.14](https://www.libsdl.org/release/SDL2-devel-2.0.14-VC.zip)  download the SDL develop binary library
 
-create `externlib` folder and put the libraries in here , see  `CMakeLists.txt` in detail.
+[stb](https://github.com/nothings/stb/archive/refs/heads/master.zip) download and rename  `stb-master` to`stb`
+
+create `./externlib` folder and put the libraries in here , see  `CMakeLists.txt` in detail.
 
 Use cmake  to generate visual studio sln project. Mingw is not tested.
 
@@ -112,6 +118,10 @@ sudo aptitude install libgl1-mesa-dev
 sudo aptitude install libglew-dev glew-utils
 sudo aptitude install libsdl2-dev
 sudo apt install libglm-dev
+mkdir externlib
+cd externlib
+git clone https://github.com/nothings/stb.git
+cd ..
 mkdir build
 cd build
 cmake ..

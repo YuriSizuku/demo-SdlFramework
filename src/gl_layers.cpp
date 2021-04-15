@@ -113,10 +113,12 @@ CLayerHudAttitude::CLayerHudAttitude(CSceneGL& scene,
 		0.f, 0.f, 0.f, 000999.f, 000999.f, 0.f, 1.f, 0.f, 000999.f, 000999.f,
 		0.f, 0.f, 0.f, 000000.f, 999999.f, 0.f, 0.f, 1.f, 000000.f, 999999.f
 	};
-	m_attitude = shared_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1)));
-	m_attitude->setDrawMode(GL_LINES);
-	m_attitude->fillVBO(sizeof(vbo_buf), vbo_buf);
-	m_attitude->fillVAO(vector<GLint>({ 3, 2 }));
+	
+	auto mesh = shared_ptr<CMeshGL>(new CMeshGL());
+	mesh->setDrawMode(GL_LINES);
+	mesh->fillVBO(sizeof(vbo_buf), vbo_buf);
+	mesh->fillVAO(vector<GLint>({ 3, 2 }));
+	m_attitude = shared_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1), mesh));
 }
 
 void CLayerHudAttitude::drawHud()

@@ -4,51 +4,51 @@
 using std::cerr;
 using std::endl;
 
-/*CObject3DGL start*/
-CObject3DGL::CObject3DGL()
+/*CMeshGL start*/
+CMeshGL::CMeshGL()
 {
 
 }
 
-CObject3DGL::~CObject3DGL()
+CMeshGL::~CMeshGL()
 {
 	if (m_vao != -1) glDeleteVertexArrays(1, &m_vao);
 	if (m_vbo != -1) glDeleteBuffers(1, &m_vbo);
 	if (m_ebo != -1) glDeleteBuffers(1, &m_ebo);
 }
 
-CObject3DGL::CObject3DGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader)
+CMeshGL::CMeshGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader)
 {
 	m_model = model;
 	m_shaders[0] = shader;
 	glCheckError();
 }
 
-glm::mat4& CObject3DGL::getModel()
+glm::mat4& CMeshGL::getModel()
 {
 	return m_model;
 }
 
-void CObject3DGL::setModel(const glm::mat4& model)
+void CMeshGL::setModel(const glm::mat4& model)
 {
 	m_model = model;
 }
 
-void CObject3DGL::setDrawMode(GLenum drawMode)
+void CMeshGL::setDrawMode(GLenum drawMode)
 {
 	m_drawMode = drawMode;
 }
 
-GLuint CObject3DGL::getVAO()
+GLuint CMeshGL::getVAO()
 {
 	return m_vao;
 }
 
-void CObject3DGL::fillVAO(vector<GLint>& countIndexs)
+void CMeshGL::fillVAO(vector<GLint>& countIndexs)
 {
 	if (m_vbo == -1)
 	{
-		cerr << "ERROR CObject3DGL::getVAO() should gen bind vbo first!" << endl;
+		cerr << "ERROR CMeshGL::getVAO() should gen bind vbo first!" << endl;
 		return;
 	}
 	if (m_vao == -1)
@@ -73,12 +73,12 @@ void CObject3DGL::fillVAO(vector<GLint>& countIndexs)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-GLuint CObject3DGL::getVBO()
+GLuint CMeshGL::getVBO()
 {
 	return m_vbo;
 }
 
-void CObject3DGL::fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
+void CMeshGL::fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 {
 	if (m_vbo == -1)
 	{
@@ -90,12 +90,12 @@ void CObject3DGL::fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-GLuint CObject3DGL::getEBO()
+GLuint CMeshGL::getEBO()
 {
 	return m_ebo;
 }
 
-void CObject3DGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
+void CMeshGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 {
 	if (m_ebo == -1)
 	{
@@ -107,67 +107,67 @@ void CObject3DGL::fillEBO(GLsizeiptr size, const GLvoid* data, GLenum usage)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-map<size_t, shared_ptr<CShaderGL>>& CObject3DGL::getShaders()
+map<size_t, shared_ptr<CShaderGL>>& CMeshGL::getShaders()
 {
 	return m_shaders;
 }
 
-void CObject3DGL::setShader(shared_ptr<CShaderGL> shader, int index)
+void CMeshGL::setShader(shared_ptr<CShaderGL> shader, int index)
 {
 	m_shaders[index] = shader;
 }
 
-bool CObject3DGL::removeShader(int index)
+bool CMeshGL::removeShader(int index)
 {
 	if (m_shaders.find(index) == m_shaders.end())
 	{
-		cerr << "ERROR CObject3DGL::removeShader " << index << " not exist!" << endl;
+		cerr << "ERROR CMeshGL::removeShader " << index << " not exist!" << endl;
 		return false;
 	}
 	m_shaders.erase(index);
 	return true;
 }
 
-map<string, shared_ptr<CTextureGL>>& CObject3DGL::getTextures()
+map<string, shared_ptr<CTextureGL>>& CMeshGL::getTextures()
 {
 	return m_textures;
 }
 
-bool CObject3DGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
+bool CMeshGL::addTexture(string textureName, shared_ptr<CTextureGL> texture)
 {
 	if (m_textures.find(textureName) != m_textures.end())
 	{
-		cerr << "ERROR CObject3DGL::addTexture " << textureName << " already exist!" << endl;
+		cerr << "ERROR CMeshGL::addTexture " << textureName << " already exist!" << endl;
 		return false;
 	}
 	m_textures[textureName] = texture;
 	return true;
 }
 
-bool CObject3DGL::removeTexture(string textureName)
+bool CMeshGL::removeTexture(string textureName)
 {
 	if (m_textures.find(textureName) == m_textures.end())
 	{
-		cerr << "ERROR CObject3DGL::removeTexture " << textureName << " not exist!" << endl;
+		cerr << "ERROR CMeshGL::removeTexture " << textureName << " not exist!" << endl;
 		return false;
 	}
 	m_textures.erase(textureName);
 	return true;
 }
 
-bool CObject3DGL::beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader)
+bool CMeshGL::beforeDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader)
 {
 	glCheckError();
 	return true;
 }
 
-bool CObject3DGL::afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
+bool CMeshGL::afterDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
 {
 	glCheckError();
 	return true;
 }
 
-void CObject3DGL::draw(int shaderIndex, shared_ptr<CShaderGL> shader)
+void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, shared_ptr<CShaderGL> shader)
 {
 	bool drawed = false;
 	shared_ptr<CShaderGL> currentShader = shader;
@@ -179,24 +179,112 @@ void CObject3DGL::draw(int shaderIndex, shared_ptr<CShaderGL> shader)
 	}
 
 	// update the model martrix every time, because the shader can be shared
-	currentShader->setUniformMat4fv(MODEL_MATRIX_NAME, glm::value_ptr(m_model));
+	currentShader->setUniformMat4fv(MODEL_MATRIX_NAME, glm::value_ptr(objectModel*m_model));
 	currentShader->use();
-	if (beforeDrawObject(shaderIndex, shader))
+	for (auto it : m_textures) // active and bind each textures for the object
+	{
+		it.second->active();
+		it.second->bind();
+	}
+	if (beforeDrawMesh(shaderIndex, shader))
 	{
 		if (m_ebo != -1) glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0);
 		else glDrawArrays(m_drawMode, 0, m_vboCount);
 		drawed = true;
 	}
-	afterDrawObject(shaderIndex, shader, drawed);
+	for (auto it : m_textures) // unbind all textures
+	{
+		it.second->unbind();
+	}
+	afterDrawMesh(shaderIndex, shader, drawed);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
+/*CMeshGL end*/
+
+/*CObject3DGL start*/
+CObject3DGL::CObject3DGL()
+{
+
+}
+
+CObject3DGL::CObject3DGL(const glm::mat4& model, shared_ptr<CMeshGL> mesh)
+{
+	m_model = model;
+	if (mesh) pushMesh(mesh);
+}
+
+CObject3DGL::~CObject3DGL()
+{
+
+}
+
+vector<shared_ptr<CMeshGL>>& CObject3DGL::getMeshs()
+{
+	return m_meshes;
+}
+
+void CObject3DGL::pushMesh(shared_ptr<CMeshGL> mesh)
+{
+	m_meshes.push_back(mesh);
+}
+
+void CObject3DGL::setShader(shared_ptr<CShaderGL> shader, int index)
+{
+	for (auto it : m_meshes)
+	{
+		it->setShader(shader, index);
+	}
+}
+
+bool CObject3DGL::removeShader(int index)
+{
+	for (auto it : m_meshes)
+	{
+		if(!it->removeShader(index)) return false;
+	}
+	return true;
+}
+
+glm::mat4& CObject3DGL::getModel()
+{
+	return m_model;
+}
+
+void CObject3DGL::setModel(const glm::mat4& model)
+{
+	m_model = model;
+}
+
+bool CObject3DGL::beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader)
+{
+	return true;
+}
+
+bool CObject3DGL::afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
+{
+	return true;
+}
+
+void CObject3DGL::draw(int shaderIndex, shared_ptr<CShaderGL> shader)
+{
+	bool drawed = false;
+	if (beforeDrawObject(shaderIndex, shader))
+	{
+		for (auto it : m_meshes)
+		{
+			it->draw(m_model, shaderIndex, shader);
+		}
+		drawed = true;
+	}
+	afterDrawObject(shaderIndex, shader, drawed);
+}
 /*CObject3DGL end*/
 
-/*CPlaneGL start*/
-CPlaneGL::CPlaneGL( const glm::mat4& model,  
+/*CPlaneMeshGL start*/
+CPlaneMeshGL::CPlaneMeshGL( const glm::mat4& model,  
 	const shared_ptr<CShaderGL> shader,
-	GLenum usage, map<int, glm::vec2>& texcoords):CObject3DGL(model, shader)
+	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
 {
 	GLfloat vbo_buf[]= { // vec3 pos, vec2 texcoord, vec3 normal, vec3 tangent
 		 0.5f,  0.5f, 0, 0,   0,   0, 0, 1.f, 1.f, 0, 0,
@@ -232,12 +320,12 @@ CPlaneGL::CPlaneGL( const glm::mat4& model,
 	fillVAO();
 	glCheckError();
 }
-/*CPlaneGL end*/
+/*CPlaneMeshGL end*/
 
-/*CCubeGL start*/
-CCubeGL::CCubeGL(const glm::mat4& model,
+/*CCubeMeshGL start*/
+CCubeMeshGL::CCubeMeshGL(const glm::mat4& model,
 	const shared_ptr<CShaderGL> shader,
-	GLenum usage, map<int, glm::vec2>& texcoords):CObject3DGL(model, shader)
+	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
 {
 	GLfloat vbo_buf[INDEX_COUNT * 36];
 	GLint face_ebo_buf[] = { 0,1,2,2,3,0 };
@@ -322,8 +410,8 @@ CCubeGL::CCubeGL(const glm::mat4& model,
 	fillVAO();
 	glCheckError();
 }
-/*CCubeGL end*/
+/*CCubeMeshGL end*/
 
-/*CSphereGL start*/
-/*CSphereGL end*/
+/*CSphereMeshGL start*/
+/*CSphereMeshGL end*/
 #endif

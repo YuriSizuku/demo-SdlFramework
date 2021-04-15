@@ -39,6 +39,11 @@ public:
 	virtual void draw();
 };
 
+class CLayerPhongGL: public CLayerGL
+{
+
+};
+
 // generate the shadow map by every light, point light, direction light
 // combine all light shadow positions to shadowMapTexture (in clip space)
 class CShadowMapLayerGL : public CLayerGL

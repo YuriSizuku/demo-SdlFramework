@@ -37,14 +37,23 @@ public:
 	// get, set uniform, return location
 	GLint getUniformLocation(string uniformName);
 	GLint getUniformBlockIndex(string uniformName);
+	GLint setUnifrom1i(string uniformName, GLint number);
 	GLint setUniform4fv(string uniformName, const GLfloat* data);
 	GLint setUniform4fv(string uniformName, GLsizei i, const GLfloat* data);
 	GLint setUniform4fv(string uniformName, GLsizei i, GLsizei count, const GLfloat* data);
 	GLint setUniformMat4fv(string uniformName, const GLfloat* data);
-	GLint setUniformBlock(string uniformName,
+	// return gpu block buffer, should glDeleteBuffer after draw
+	GLuint setUniformBlock(string uniformName, 
 		GLintptr offset, GLsizei size, const void* data);
 	void use();
+	void unuse();
 	virtual ~CShaderGL();
+};
+
+// a class to load images from file
+class CImageGL
+{
+
 };
 
 // a class of texture manager, for filling texture of reading from texture
@@ -53,27 +62,39 @@ class CTextureGL
 protected:
 	GLuint m_texture = -1;
 	GLenum m_target = GL_TEXTURE_2D;
+	GLenum m_internalFormat = GL_RGBA;
+	GLsizei m_width = 0, m_height = 0;
 	GLenum m_aciveIndex = GL_TEXTURE0;
 
 public:
-	CTextureGL(GLenum target);
+	CTextureGL(GLenum target, GLenum aciveIndex= GL_TEXTURE0);
 	GLuint getTexture();
 	GLenum getTarget();
 	GLenum getActiveIndex();
+	GLint getTexLevelParameter(GLint level, GLenum  pname);
+	GLint getTexWidth(GLint level=0);
+	GLint getTexHeight(GLint level = 0);
+	GLint getInternalFormat(GLint level=0);
 	void getTexImage(GLint level, GLenum format, GLenum type, void* pixels);
+	void texParameteri(GLenum pname, GLint param);
 	GLenum active(GLenum aciveIndex); // < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS -1
 	GLenum active(); // return the previous activeIndex
 	void bind();
+	void unbind();
 	virtual ~CTextureGL();
 };
 
 class CTexture2DGL : public CTextureGL
 {
 public:
-	CTexture2DGL();
+	CTexture2DGL(GLenum aciveIndex=GL_TEXTURE0);
+	CTexture2DGL(GLsizei width, GLsizei height, 
+		GLenum aciveIndex = GL_TEXTURE0, GLenum internalFormat = GL_RGBA);
 	void texImage2D(GLint level, GLint internalFormat,
 		GLsizei width, GLsizei height, GLint border,
 		GLenum format, GLenum type, const GLvoid* data);
+	void texImage2D(const GLvoid* data, GLint level=0, 
+		GLenum format=GL_RGBA, GLenum type=GL_UNSIGNED_BYTE);
 	void texSubImage2D(GLint level, GLint xoffset, GLint yoffset,
 		GLsizei width, GLsizei height,
 		GLenum format, GLenum type, const GLvoid* data);
