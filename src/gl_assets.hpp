@@ -28,22 +28,26 @@ protected:
 
 public:
 	CShaderGL();
-	CShaderGL(string vertPath, string fragPath, string geometryPath = "");
-	void addShaderFile(string path, GLenum shaderType);
+	CShaderGL(string& vertPath, string& fragPath, string& geometryPath = string(""));
+	void addShaderFile(string& path, GLenum shaderType);
 	void addShaderSource(string& source, GLenum shaderType);
 	void linkProgram();
 	GLuint getProgram();
 
 	// get, set uniform, return location
-	GLint getUniformLocation(string uniformName);
-	GLint getUniformBlockIndex(string uniformName);
-	GLint setUnifrom1i(string uniformName, GLint number);
-	GLint setUniform4fv(string uniformName, const GLfloat* data);
-	GLint setUniform4fv(string uniformName, GLsizei i, const GLfloat* data);
-	GLint setUniform4fv(string uniformName, GLsizei i, GLsizei count, const GLfloat* data);
-	GLint setUniformMat4fv(string uniformName, const GLfloat* data);
+	GLint getUniformLocation(string& uniformName);
+	GLint getUniformBlockIndex(string& uniformName);
+	GLint setUnifrom1i(string& uniformName, GLint i0);
+	GLint setUniform1f(string& uniformName, GLfloat v0);
+	GLint setUniform3fv(string& uniformName, const GLfloat* data);
+	GLint setUniform3fv(string& uniformName, GLsizei i, const GLfloat* data);
+	GLint setUniform3fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data);
+	GLint setUniform4fv(string& uniformName, const GLfloat* data);
+	GLint setUniform4fv(string& uniformName, GLsizei i, const GLfloat* data);
+	GLint setUniform4fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data);
+	GLint setUniformMat4fv(string& uniformName, const GLfloat* data);
 	// return gpu block buffer, should glDeleteBuffer after draw
-	GLuint setUniformBlock(string uniformName, 
+	GLuint setUniformBlock(string& uniformName, 
 		GLintptr offset, GLsizei size, const void* data);
 	void use();
 	void unuse();
@@ -98,7 +102,6 @@ public:
 	void texSubImage2D(GLint level, GLint xoffset, GLint yoffset,
 		GLsizei width, GLsizei height,
 		GLenum format, GLenum type, const GLvoid* data);
-	virtual ~CTexture2DGL();
 };
 
 class CTexture3DGL :public CTextureGL
@@ -111,7 +114,6 @@ public:
 	void texSubImage3D(GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
 		GLsizei width, GLsizei height, GLsizei depth,
 		GLenum format, GLenum type, const GLvoid* data);
-	virtual ~CTexture3DGL();
 };
 
 class CTextureCubeGL : public CTextureGL
@@ -122,7 +124,6 @@ public:
 	void texImage2DI(GLenum i, GLint level, GLint internalFormat,
 		GLsizei width, GLsizei height, GLint border,
 		GLenum format, GLenum type, const GLvoid* data);
-	virtual ~CTextureCubeGL();
 };
 
 #endif

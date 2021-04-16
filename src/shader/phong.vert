@@ -12,11 +12,11 @@ out VS_OUT
     vec2 aTexcoord;
     vec3 aNormal;
     vec3 aTangent;
-    vec4 FragPos;
+    vec4 fragPos; // world pos
     mat3 worldTBN;
 } vs_out;
 
-mat3 calculate_worldTBN(mat4 model, vec3 tangent, vec3 normal)
+mat3 CalcWorldTBN(mat4 model, vec3 tangent, vec3 normal)
 {
     mat3 normal_model = transpose(inverse(mat3(model)));
     vec3 T = normalize(normal_model*tangent);
@@ -33,9 +33,9 @@ void main()
     vs_out.aTangent = aTangent;
 
     // calculate worldTBN
-    vs_out.worldTBN = calculate_worldTBN(model, aTangent, aNormal);
+    vs_out.worldTBN = CalcWorldTBN(model, aTangent, aNormal);
     
     // calculate vertex position
-    vs_out.FragPos = projection * view * model * vec4(aPos.xyz, 1.f);
-    gl_Position = vs_out.FragPos;
+    vs_out.fragPos =  model * vec4(aPos.xyz, 1.f);
+    gl_Position = projection * view * vs_out.fragPos;
 }

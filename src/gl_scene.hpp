@@ -25,6 +25,8 @@ using std::string;
 class CObject3DGL;
 class CLayerGL;
 
+#define VIEW_MATRIX_NAME  "view"
+#define PROJECTION_MATRIX_NAME "projection"
 GLenum _glCheckError(const char* file, int line);
 #ifdef _DEBUG
 #define glCheckError() _glCheckError(__FILE__, __LINE__)
@@ -35,11 +37,13 @@ GLenum _glCheckError(const char* file, int line);
 // The light information for rendering lighting
 typedef struct Light
 {
-	glm::vec4 position; // w=0 direction color
-	glm::vec3 color;
-	glm::vec3 attenuation; // point light attenuation coefficient
-	glm::vec3 spotDirection; // for spot 
-	float cutoff, outerCutoff;
+	glm::vec4 position; // w=0 is direction light, else point or spot light
+	glm::vec3 direction; // for direction light or spot light 
+	glm::vec3 ambient; 
+	glm::vec3 diffuse;
+	glm::vec3 specular; 
+	glm::vec3 attenuation; // point/spot light attenuation coefficient
+	float cutoff, outerCutoff; // cutoff > 0 spot light, else point light
 }Light;
 
 // material structure for object with phong rendering
@@ -50,6 +54,7 @@ typedef struct MaterialPhong
 	glm::vec3 diffuse;
 	glm::vec3 specular;
 	float shininess;
+	float alpha;
 }MaterialPhong;
 
 // defines the structure of vertex attribution
@@ -88,9 +93,7 @@ protected:
 	glm::mat4 m_view = glm::mat4(1);
 	glm::mat4 m_project = glm::mat4(1);
 	Camera m_camera; // camera -> view, project
-public:
-	char* VIEW_MATRIX_NAME = "view";
-	char* PROJECTION_MATRIX_NAME = "projection";
+
 public:
 	CSceneGL();
 	CSceneGL(string shaderName, string shaderDir);

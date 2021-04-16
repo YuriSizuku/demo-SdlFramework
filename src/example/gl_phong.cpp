@@ -3,55 +3,112 @@
 #include "sdl_framework.hpp"
 #include "gl_scene.hpp"
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
 #include "stb_image.h"
 using std::shared_ptr;
 using std::cout;
 using std::endl;
 
-const char SHADER_DEFAULT[] = "test";
+const char SHADER_DEFAULT[] = "phong";
 const char SHADER_DIR[] = "./assets";
 
 class CSimpleScene : public CSceneGL
 {
 public:
-    CSimpleScene(): CSceneGL(SHADER_DEFAULT, SHADER_DIR)
+    CSimpleScene() : CSceneGL(SHADER_DEFAULT, SHADER_DIR)
+    {
+        initShaders();
+        initLights();
+        initLayers();
+        initObjects();
+        setCamera();
+    }
+
+    void initShaders()
+    {
+        addShader("debug_normal");
+        addShader("debug_attitude");
+    }
+
+    void initLights()
+    {
+        // directional light
+        Light light;
+        light.position = glm::vec4(0);
+        light.direction = { 5.f, -3.f, 1.f };
+        light.diffuse = { 1.f, 1.f, 1.f };
+        light.ambient = { 1.f, 1.f, 1.f };
+        light.specular = { 1.f, 1.f, 1.f };
+        light.attenuation = { 1.f ,0.f, 0.f };
+        light.cutoff = glm::radians(0.f); 
+        light.outerCutoff = glm::radians(0.f);
+        
+        // point light
+        Light light2 = light;
+        light2.position = { 0.f, 0.f, 1.f, 1.f };
+        light2.ambient *= 0.f;
+
+        // spot light
+        Light light3 = light;
+        light3.position = { 1.f, 0.f, 0.f, 1.f };
+        light3.direction = { -1.f, 0.f, 0.f };
+        light3.cutoff = glm::radians(20.f);
+        light3.outerCutoff = glm::radians(40.f);
+        light2.ambient *= 0.f;
+
+        pushLight(light);
+        pushLight(light2);
+        pushLight(light3);
+    }
+
+    void initLayers()
+    {
+        auto layer = shared_ptr<CLayerGL>(new CLayerPhongGL(*this));
+        auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
+        auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
+        this->pushLayer(layer);
+        this->pushLayer(layer_normal);
+        this->pushLayer(layer_attitude);
+    }
+
+    void initObjects()
     {
         // load images
         int w, h, c;
-        auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);  
+        auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);
         auto tex = shared_ptr<CTexture2DGL>(new CTexture2DGL(w, h));
         tex->texImage2D(imgdata);
         m_textures["misuzu"] = tex;
-        delete[] imgdata; 
+        delete[] imgdata;
+        
+        // prepare material
+        auto _material = new MaterialPhong;
+        _material->ambient = { 0.2f, 0.2f, 0.2f };
+        _material->diffuse = { 0.8f, 0.8f, 0.8f };
+        _material->specular = { 0.8f, 0.8f, 0.8f };
+        _material->shininess = 25.f;
+        _material->alpha = 1.f;
+        auto material = shared_ptr<void>(_material);
 
-        //prepare shaders and layers 
-        addShader("debug_normal");
-        addShader("debug_attitude");
-        setCamera();
-        auto layer = shared_ptr<CLayerGL>(new CLayerGL(*this));
-        auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
-        auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
-        this->pushLayer(layer); 
-        this->pushLayer(layer_normal);
-        this->pushLayer(layer_attitude);
-
-        // a planeMesh
+        // plane
         glm::mat4 model;
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, -1.f, 0.f));
-        model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0)) ;
+        model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0));
         model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
         auto planeMesh = shared_ptr<CPlaneMeshGL>(new CPlaneMeshGL());
-        planeMesh->setShader(m_shaders[SHADER_DEFAULT]); 
+        planeMesh->setMaterial(material);
+        planeMesh->setShader(m_shaders[SHADER_DEFAULT]);
         planeMesh->addTexture("misuzu", tex);
         auto planeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, planeMesh));
         m_objects.pushObject(planeObject);
 
-        // a cube 
+        // cube 
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f));
         model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); // then pitch
         model = glm::rotate(model, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f)); // yaw first
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 0.5f));
         auto cubeMesh = shared_ptr<CCubeMeshGL>(new CCubeMeshGL());
+        cubeMesh->setMaterial(material);
         cubeMesh->setShader(m_shaders[SHADER_DEFAULT]);
         cubeMesh->addTexture("misuzu", tex);
         auto cubeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, cubeMesh));
@@ -84,7 +141,7 @@ public:
 
 void start()
 {
-    string title = "gl test";
+    string title = "gl phong";
     CAppSDL app;
     app.prepareGL();
     app.enableGL(true);

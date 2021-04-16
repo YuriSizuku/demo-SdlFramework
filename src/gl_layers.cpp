@@ -2,7 +2,9 @@
 #include <iostream>
 #include "gl_layers.hpp"
 using std::cerr;
+using std::cout;
 using std::endl;
+using std::to_string;
 
 /*CLayerGL start*/
 CLayerGL::CLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader,
@@ -27,22 +29,9 @@ shared_ptr<CTextureGL> CLayerGL::getOutFrameBuffer()
 	return m_outFrameBuffer;
 }
 
-void CLayerGL::drawSceneObjects(shared_ptr<CShaderGL> shader)
+void CLayerGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader)
 {
-	auto m_objects = m_scene.getObjects();
-	bool drawed = false;
-	if (beforeDrawLayer())
-	{
-		for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
-		{
-			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				(*it2)->draw(m_layerIndex, shader);
-			}
-		}
-		drawed = true;
-	}
-	afterDrawLayer(drawed);
+	if(object) object->draw(m_layerIndex, shader);
 }
 
 bool CLayerGL::beforeDrawLayer()
@@ -57,9 +46,114 @@ bool CLayerGL::afterDrawLayer(bool drawed)
 
 void CLayerGL::draw()
 {
-	drawSceneObjects(m_layerShader);
+	auto m_objects = m_scene.getObjects();
+	bool drawed = false;
+	if (beforeDrawLayer())
+	{
+		for (auto it = m_objects.get().begin(); it != m_objects.get().end(); it++)
+		{
+			for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			{
+				drawSceneObject((*it2).get(), m_layerShader.get());
+			}
+		}
+		drawed = true;
+	}
+	afterDrawLayer(drawed);
 }
 /*CLayerGL end*/
+
+/*CLayerPhongGL start*/
+CLayerPhongGL::CLayerPhongGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader,
+	shared_ptr<CTextureGL> outFrameBuffer): CLayerGL(scene, layerShader, outFrameBuffer)
+{
+		
+}
+
+void CLayerPhongGL::setLightUniform(Light* light, CShaderGL* shader, GLsizei i)
+{
+	shader->setUniform4fv(STCIFIELDSTRING(LIGHTS_NAME, i, POSITION_NAME),
+		glm::value_ptr(light->position));
+	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, DIRECTION_NAME),
+		glm::value_ptr(light->direction));
+	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, AMBIENT_NAME),
+		glm::value_ptr(light->ambient));
+	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, DIFFUSE_NAME),
+		glm::value_ptr(light->diffuse));
+	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, SPECULAR_NAME),
+		glm::value_ptr(light->specular));
+	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, ATTENUATION_NAME),
+		glm::value_ptr(light->attenuation));
+	shader->setUniform1f(STCIFIELDSTRING(LIGHTS_NAME, i, CUTOFF_NAME),
+		light->cutoff);
+	shader->setUniform1f(STCIFIELDSTRING(LIGHTS_NAME, i, OUTERCUTOFF_NAME),
+		light->outerCutoff);
+}
+
+bool CLayerPhongGL::beforeDrawLayer()
+{
+	m_usedProgram.clear();
+	return true;
+}
+
+void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader)
+{
+	vector<Light>& lights = m_scene.getLights();
+	if (shader) // use layer shader
+	{
+		shader->setUniform3fv(string(VIEWPOS_NAME),glm::value_ptr(m_scene.getCamera().pos));
+		shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
+		for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
+		{
+			setLightUniform(&lights[i], shader, i);
+		}
+	}
+	else
+	{
+		// assign global uniforms, such as Light, to avoid duplicate
+		for (auto mesh : object->getMeshs())
+		{
+			shader = mesh->getShaders()[m_layerIndex].get();
+			if (m_usedProgram.find(shader->getProgram()) == m_usedProgram.end())
+			{
+				shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
+				shader->setUniform3fv(string(VIEWPOS_NAME),
+					glm::value_ptr(m_scene.getCamera().pos));
+				for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
+				{
+					setLightUniform(&lights[i], shader, i);
+				}
+				m_usedProgram.insert(shader->getProgram());
+			}
+		}
+	}
+
+	// set individual unifrom for each mesh
+	PFNCMESHGLCB pfnMeshSetCallback = [](int shaderindex, CMeshGL* mesh, CSceneGL* scene)->void
+	{
+		if (!mesh)
+		{
+			cerr << "ERROR  CLayerPhongGL::drawSceneObject pfnMeshSetCallback mesh is NULL" << endl;
+			return;
+		}
+		if (!mesh->getMaterial()) return;
+
+		auto shader = mesh->getShaders()[shaderindex];
+		MaterialPhong* material = static_cast<MaterialPhong*>(mesh->getMaterial().get());
+		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, AMBIENT_NAME),
+			glm::value_ptr(material->ambient));
+		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, DIFFUSE_NAME),
+			glm::value_ptr(material->diffuse));
+		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, SPECULAR_NAME),
+			glm::value_ptr(material->specular));
+		shader->setUniform1f(STCFIELDSTRING(MATERIAL_NAME, SHININESS_NAME),
+			material->shininess);
+		shader->setUniform1f(STCFIELDSTRING(MATERIAL_NAME, ALPHA_NAME),
+			material->alpha);
+	};
+	object->draw(m_layerIndex, shader, NULL, pfnMeshSetCallback);
+}
+/*CLayerPhongGL end*/
 
 /*CLayerHudGL start*/
 CLayerHudGL::CLayerHudGL(CSceneGL& scene,
@@ -87,7 +181,7 @@ CLayerHudGL::~CLayerHudGL()
 
 void CLayerHudGL::drawHud()
 {
-	drawSceneObjects(m_layerShader);
+	CLayerGL::draw();
 }
 
 void CLayerHudGL::draw()
@@ -131,16 +225,11 @@ void CLayerHudAttitude::drawHud()
 		cerr << "CLayerHudAttitude::drawHud layer shader is NULL" << endl;
 		return;
 	}
-	m_layerShader->setUniformMat4fv(m_scene.VIEW_MATRIX_NAME, glm::value_ptr(view));
-	m_layerShader->setUniformMat4fv(m_scene.PROJECTION_MATRIX_NAME, glm::value_ptr(project));
+	m_layerShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(view));
+	m_layerShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(project));
 	glLineWidth(2.f);
-	m_attitude->draw(0, m_layerShader);
+	m_attitude->draw(0, m_layerShader.get());
 	glLineWidth(1.f);
-}
-
-CLayerHudAttitude::~CLayerHudAttitude()
-{
-
 }
 /*CLayerHudAttitude end*/
 #endif

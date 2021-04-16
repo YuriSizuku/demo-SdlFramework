@@ -3,6 +3,7 @@
 #define _GL_LAYERS_H
 #include <memory>
 #include <vector>
+#include <set>
 #include <string>
 #include "gl_scene.hpp"
 #include "gl_assets.hpp"
@@ -10,12 +11,34 @@
 
 using std::shared_ptr;
 using std::vector;
+using std::set;
 using std::string;
+class CMeshGL;
 class CSceneGL;
 class CShaderGL;
 class CTextureGL;
 class CObject3DGL;
 typedef struct Light Light;
+typedef struct MaterialPhong MaterialPhong;
+#define STCFIELDSTRING(STC, FIELD) string(STC##"."##FIELD)
+#define STCIFIELDSTRING(STC, INDEX, FIELD) string(STC) +"["+ to_string(INDEX) +"]."+ string(FIELD)
+
+#define VIEWPOS_NAME "viewPos"
+#define LIGHTS_NAME "lights"
+#define LIGHT_NUM_NAME "lightsNum"
+#define POSITION_NAME "position"
+#define COLOR_NAME "color"
+#define ATTENUATION_NAME "attenuation"
+#define DIRECTION_NAME "direction"
+#define CUTOFF_NAME "cutoff"
+#define OUTERCUTOFF_NAME "outerCutoff"
+
+#define MATERIAL_NAME "material"
+#define AMBIENT_NAME "ambient"
+#define DIFFUSE_NAME "diffuse"
+#define SPECULAR_NAME "specular"
+#define SHININESS_NAME "shininess"
+#define ALPHA_NAME "alpha"
 
 // use multi layer for defered rendering, inFrameBuffer -> outFrameBuffer
 class CLayerGL
@@ -27,7 +50,7 @@ protected:
 	shared_ptr<CTextureGL> m_inFrameBuffer, m_outFrameBuffer; // in Frame is the from last
 
 protected:
-	virtual void drawSceneObjects(shared_ptr<CShaderGL> shader);
+	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader);
 	virtual bool beforeDrawLayer(); // set unifroms and values here
 	virtual bool afterDrawLayer(bool drawed);
 public:
@@ -41,7 +64,17 @@ public:
 
 class CLayerPhongGL: public CLayerGL
 {
+private:
+	set<GLuint> m_usedProgram;
 
+protected:
+	// give the uniform information to shaders seperately
+	void setLightUniform(Light* light, CShaderGL* shader, int i);
+	virtual bool beforeDrawLayer();
+	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader);
+public:
+	CLayerPhongGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader = nullptr,
+		shared_ptr<CTextureGL> outFrameBuffer = nullptr);
 };
 
 // generate the shadow map by every light, point light, direction light
@@ -54,7 +87,6 @@ private:
 public:
 	void genLightShadowMap(Light* light);
 	CShadowMapLayerGL(CSceneGL& scene, shared_ptr<CTextureGL> shadowMapTexture);
-	virtual ~CShadowMapLayerGL();
 	virtual void draw();
 };
 
@@ -67,7 +99,6 @@ private:
 
 public:
 	CEnviromentLayerGL(CSceneGL& scene, shared_ptr<CTextureCubeGL> m_enviromentMapTexture);
-	virtual ~CEnviromentLayerGL();
 	virtual void draw();
 };
 
@@ -79,7 +110,6 @@ private:
 
 public:
 	CBlendLayerGL(CSceneGL& scene, vector<shared_ptr<CTextureGL>>& textures);
-	virtual ~CBlendLayerGL();
 	virtual void draw();
 };
 
@@ -107,7 +137,6 @@ public:
 	CLayerHudAttitude(CSceneGL& scene,
 		shared_ptr<CShaderGL> attitudeShader, GLint hudViewPort[4] = NULL);
 	virtual void drawHud();
-	virtual ~CLayerHudAttitude();
 };
 
 // generate a cube in the light position for viewing light

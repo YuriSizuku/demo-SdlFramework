@@ -15,6 +15,13 @@ using std::vector;
 using std::map;
 using std::string;
 
+class CObject3DGL;
+class CMeshGL;
+class CSceneGL;
+typedef void (*PFNCOBJECT3DGLCB)(int shaderIndex, CObject3DGL* object, CSceneGL* scene);
+typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene);
+#define MODEL_MATRIX_NAME "model"
+
 // contains vao, vbo, ebo, textures and shaders for each layer
 // also have a pysical component and extra info,such as id, type, status
 class CMeshGL
@@ -28,20 +35,21 @@ protected:
 	map<size_t, shared_ptr<CShaderGL>> m_shaders;
 	// textures combined with the object will be activate and bind
 	map<string, shared_ptr<CTextureGL>> m_textures;
+	shared_ptr<void> m_material = nullptr;
 	glm::mat4 m_model = glm::mat4(1);
+	
 public:
 	int m_type = 0, m_id = 0, m_status = 0;
-	shared_ptr<void*> m_pPhysicsRelated = nullptr;
-	char* MODEL_MATRIX_NAME = "model";
+	shared_ptr<void> m_pPhysicsRelated = nullptr;
 	static const int INDEX_COUNT = 11;
 	static const int TEXCOORD_INDEX = 3;
 	static const int NORMAL_INDEX = 5;
 	static const int TANGENT_INDEX = 8;
 
 protected:
-	// set unifroms and values here
-	virtual bool beforeDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader);
-	virtual bool afterDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed);
+	// this is the implement for user to do somthing before or after draw mesh
+	virtual bool beforeDrawMesh(int shaderIndex, CShaderGL* shader);
+	virtual bool afterDrawMesh(int shaderIndex, CShaderGL* shader, bool drawed);
 public:
 	CMeshGL();
 	CMeshGL(const glm::mat4& model, const shared_ptr<CShaderGL> shader = nullptr);
@@ -65,10 +73,15 @@ public:
 	map<string, shared_ptr<CTextureGL>>& getTextures();
 	bool addTexture(string name, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string name);
+	shared_ptr<void>& getMaterial();
+	void setMaterial(shared_ptr<void> material);
 
 	virtual ~CMeshGL();
 	// draw the obejct using the m_shaders, or extern shader
-	virtual void draw(glm::mat4& objectModel=glm::mat4(1), int shaderIndex = 0, shared_ptr<CShaderGL> shader = nullptr);
+	// use pfnMeshSetCallback to set the unifroms by the layer
+	virtual void draw(glm::mat4& objectModel=glm::mat4(1), 
+		int shaderIndex = 0, CShaderGL* shader = nullptr,
+		PFNCMESHGLCB pfnMeshSetCallback=NULL, CSceneGL* scene = NULL);
 };
 
 // a 3D object for gl rendering, manage multi meshes
@@ -79,11 +92,12 @@ protected:
 	glm::mat4 m_model = glm::mat4(1);
 public:
 	int m_type = 0, m_id = 0, m_status = 0;
-	shared_ptr<void*> m_pPhysicsRelated = nullptr;
+	shared_ptr<void> m_pPhysicsRelated = nullptr;
 
 protected:
-	virtual bool beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader);
-	virtual bool afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed);
+	// this is the implement for user to do somthing before or after draw object
+    virtual bool beforeDrawObject(int shaderIndex, CShaderGL* shader);
+	virtual bool afterDrawObject(int shaderIndex, CShaderGL* shader, bool drawed);
 public:
 	CObject3DGL();
 	CObject3DGL(const glm::mat4& model, shared_ptr<CMeshGL> mesh=nullptr);
@@ -94,7 +108,10 @@ public:
 	bool removeShader(int index = 0);
 	glm::mat4& getModel();
 	void setModel(const glm::mat4& model);
-	virtual void draw(int shaderIndex = 0, shared_ptr<CShaderGL> shader = nullptr);
+	// pfnObjectSetCallback, pfnMeshSetCallback is for layer to set values
+	virtual void draw(int shaderIndex = 0, CShaderGL* shader = nullptr, 
+		PFNCOBJECT3DGLCB pfnObjectSetCallback = NULL, 
+		PFNCMESHGLCB pfnMeshSetCallback = NULL, CSceneGL* scene=NULL);
 	virtual ~CObject3DGL();
 };
 

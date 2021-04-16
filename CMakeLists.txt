@@ -134,7 +134,7 @@ target_include_directories(${DEMO_NAME} PRIVATE
 config_externlib(${DEMO_NAME})
 
 # gl test
-set(DEMO_NAME gl_test)
+set(DEMO_NAME gl_phong)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
     ${SDL_FRAMEWORK_CODE}

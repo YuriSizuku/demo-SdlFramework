@@ -25,7 +25,7 @@ CShaderGL::CShaderGL()
 	glCheckError();
 }
 
-CShaderGL::CShaderGL(string vertPath, string fragPath, string geometryPath) :CShaderGL()
+CShaderGL::CShaderGL(string& vertPath, string& fragPath, string& geometryPath) :CShaderGL()
 {
 	if (vertPath != "") addShaderFile(vertPath, GL_VERTEX_SHADER);
 	if (geometryPath != "") addShaderFile(geometryPath, GL_GEOMETRY_SHADER);
@@ -42,7 +42,7 @@ CShaderGL::~CShaderGL()
 	glDeleteProgram(m_programID);
 }
 
-void CShaderGL::addShaderFile(string path, GLenum shaderType)
+void CShaderGL::addShaderFile(string& path, GLenum shaderType)
 {
 	ifstream fin(path);
 	stringstream source;
@@ -93,7 +93,7 @@ GLuint CShaderGL::getProgram()
 	return m_programID;
 }
 
-GLint CShaderGL::getUniformLocation(string uniformName)
+GLint CShaderGL::getUniformLocation(string& uniformName)
 {
 	auto location = glGetUniformLocation(m_programID, uniformName.c_str());
 	if (location == -1)
@@ -103,7 +103,7 @@ GLint CShaderGL::getUniformLocation(string uniformName)
 	return location;
 }
 
-GLint CShaderGL::getUniformBlockIndex(string uniformName)
+GLint CShaderGL::getUniformBlockIndex(string& uniformName)
 {
 	auto location = glGetUniformBlockIndex(m_programID, uniformName.c_str());
 	if (location == -1)
@@ -113,15 +113,44 @@ GLint CShaderGL::getUniformBlockIndex(string uniformName)
 	return location;
 }
 
-GLint CShaderGL::setUnifrom1i(string uniformName, GLint number)
+GLint CShaderGL::setUnifrom1i(string& uniformName, GLint i0)
 {
 	auto location = getUniformLocation(uniformName);
 	glUseProgram(m_programID);
-	glUniform1i(location, number);
+	glUniform1i(location, i0);
 	return location;
 }
 
-GLint CShaderGL::setUniform4fv(string uniformName, const GLfloat* data)
+GLint CShaderGL::setUniform1f(string& uniformName, GLfloat v0)
+{
+	auto location = getUniformLocation(uniformName);
+	glUseProgram(m_programID);
+	glUniform1f(location, v0);
+	return location;
+}
+
+GLint CShaderGL::setUniform3fv(string& uniformName, const GLfloat* data)
+{
+	auto location = getUniformLocation(uniformName);
+	glUseProgram(m_programID);
+	glUniform3fv(location, 1, data);
+	return location;
+}
+
+GLint CShaderGL::setUniform3fv(string& uniformName, GLsizei i, const GLfloat* data)
+{
+	return setUniform3fv(uniformName, i, 1, data);
+}
+
+GLint CShaderGL::setUniform3fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data)
+{
+	auto location = getUniformLocation(uniformName + "[" + to_string(i) + "]");
+	glUseProgram(m_programID);
+	glUniform3fv(location, count, data);
+	return location;
+}
+
+GLint CShaderGL::setUniform4fv(string& uniformName, const GLfloat* data)
 {
 	auto location = getUniformLocation(uniformName);
 	glUseProgram(m_programID);
@@ -129,12 +158,12 @@ GLint CShaderGL::setUniform4fv(string uniformName, const GLfloat* data)
 	return location;
 }
 
-GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, const GLfloat* data)
+GLint CShaderGL::setUniform4fv(string& uniformName, GLsizei i, const GLfloat* data)
 {
 	return setUniform4fv(uniformName, i, 1, data);
 }
 
-GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, GLsizei count, const GLfloat* data)
+GLint CShaderGL::setUniform4fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data)
 {
 	auto location = getUniformLocation(uniformName + "[" + to_string(i) + "]");
 	glUseProgram(m_programID);
@@ -142,7 +171,7 @@ GLint CShaderGL::setUniform4fv(string uniformName, GLsizei i, GLsizei count, con
 	return location;
 }
 
-GLint CShaderGL::setUniformMat4fv(string uniformName, const GLfloat* data)
+GLint CShaderGL::setUniformMat4fv(string& uniformName, const GLfloat* data)
 {
 	auto location = getUniformLocation(uniformName);
 	glUseProgram(m_programID);
@@ -150,7 +179,7 @@ GLint CShaderGL::setUniformMat4fv(string uniformName, const GLfloat* data)
 	return location;
 }
 
-GLuint CShaderGL::setUniformBlock(string uniformName,
+GLuint CShaderGL::setUniformBlock(string& uniformName,
 	GLintptr offset, GLsizei size, const void* data)
 	// should glDeleteBuffer after draw
 {
@@ -319,11 +348,6 @@ void CTexture2DGL::texSubImage2D(GLint level, GLint xoffset, GLint yoffset,
 	glTexSubImage2D(m_target, level, xoffset, yoffset,
 		width, height, format, type, data);
 	glBindTexture(m_target, 0);
-}
-
-CTexture2DGL::~CTexture2DGL()
-{
-
 }
 /*CTexture2DGL end*/
 #endif

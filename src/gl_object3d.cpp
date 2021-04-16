@@ -155,37 +155,49 @@ bool CMeshGL::removeTexture(string textureName)
 	return true;
 }
 
-bool CMeshGL::beforeDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader)
+shared_ptr<void>& CMeshGL::getMaterial()
+{
+	return m_material;
+}
+
+void CMeshGL::setMaterial(shared_ptr<void> material)
+{
+	m_material = material;
+}
+
+bool CMeshGL::beforeDrawMesh(int shaderIndex, CShaderGL* shader)
 {
 	glCheckError();
 	return true;
 }
 
-bool CMeshGL::afterDrawMesh(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
+bool CMeshGL::afterDrawMesh(int shaderIndex, CShaderGL* shader, bool drawed)
 {
 	glCheckError();
 	return true;
 }
 
-void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, shared_ptr<CShaderGL> shader)
+void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, 
+	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene)
 {
 	bool drawed = false;
-	shared_ptr<CShaderGL> currentShader = shader;
+	auto currentShader = shader;
 	glBindVertexArray(m_vao);
 	if (currentShader == nullptr)
 	{
 		if (m_shaders.find(shaderIndex) != m_shaders.end())
-			currentShader = m_shaders[shaderIndex];
+			currentShader = m_shaders[shaderIndex].get();
 	}
 
 	// update the model martrix every time, because the shader can be shared
-	currentShader->setUniformMat4fv(MODEL_MATRIX_NAME, glm::value_ptr(objectModel*m_model));
+	currentShader->setUniformMat4fv(string(MODEL_MATRIX_NAME), glm::value_ptr(objectModel*m_model));
 	currentShader->use();
 	for (auto it : m_textures) // active and bind each textures for the object
 	{
 		it.second->active();
 		it.second->bind();
 	}
+	if (pfnMeshSetCallback) pfnMeshSetCallback(shaderIndex, this, scene);
 	if (beforeDrawMesh(shaderIndex, shader))
 	{
 		if (m_ebo != -1) glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0);
@@ -256,24 +268,27 @@ void CObject3DGL::setModel(const glm::mat4& model)
 	m_model = model;
 }
 
-bool CObject3DGL::beforeDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader)
+bool CObject3DGL::beforeDrawObject(int shaderIndex, CShaderGL* shader)
 {
 	return true;
 }
 
-bool CObject3DGL::afterDrawObject(int shaderIndex, shared_ptr<CShaderGL> shader, bool drawed)
+bool CObject3DGL::afterDrawObject(int shaderIndex, CShaderGL* shader, bool drawed)
 {
 	return true;
 }
 
-void CObject3DGL::draw(int shaderIndex, shared_ptr<CShaderGL> shader)
+void CObject3DGL::draw(int shaderIndex, CShaderGL* shader, 
+	PFNCOBJECT3DGLCB pfnObjectSetCallback, 
+	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene)
 {
 	bool drawed = false;
+	if (pfnObjectSetCallback) pfnObjectSetCallback(shaderIndex, this, scene);
 	if (beforeDrawObject(shaderIndex, shader))
 	{
 		for (auto it : m_meshes)
 		{
-			it->draw(m_model, shaderIndex, shader);
+			it->draw(m_model, shaderIndex, shader, pfnMeshSetCallback);
 		}
 		drawed = true;
 	}
