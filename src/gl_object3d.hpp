@@ -139,7 +139,14 @@ public:
 
 class CSphereMeshGL:public CMeshGL
 {
-
+public:
+	CSphereMeshGL(const glm::mat4& model = glm::mat4(1),
+		const shared_ptr<CShaderGL> shader = nullptr,
+		GLenum usage = GL_STATIC_DRAW,
+		float stepLatitude = glm::radians(10.f) , 
+		float stepLongitude = glm::radians(10.f), 
+		glm::vec2 startTexcoord = { 0.f, 0.f }, 
+		glm::vec2 endTexcoord = {1.f, 1.f});
 };
 #endif
 #endif

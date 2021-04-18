@@ -101,7 +101,7 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader)
 	vector<Light>& lights = m_scene.getLights();
 	if (shader) // use layer shader
 	{
-		shader->setUniform3fv(string(VIEWPOS_NAME),glm::value_ptr(m_scene.getCamera().pos));
+		shader->setUniform3fv(string(VIEWPOS_NAME),glm::value_ptr(m_scene.getCamera().position));
 		shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
 		for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 		{
@@ -118,7 +118,7 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader)
 			{
 				shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
 				shader->setUniform3fv(string(VIEWPOS_NAME),
-					glm::value_ptr(m_scene.getCamera().pos));
+					glm::value_ptr(m_scene.getCamera().position));
 				for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 				{
 					setLightUniform(&lights[i], shader, i);
@@ -212,7 +212,7 @@ CLayerHudAttitude::CLayerHudAttitude(CSceneGL& scene,
 	mesh->setDrawMode(GL_LINES);
 	mesh->fillVBO(sizeof(vbo_buf), vbo_buf);
 	mesh->fillVAO(vector<GLint>({ 3, 2 }));
-	m_attitude = shared_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1), mesh));
+	m_attitude = unique_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1), mesh));
 }
 
 void CLayerHudAttitude::drawHud()
@@ -232,4 +232,43 @@ void CLayerHudAttitude::drawHud()
 	glLineWidth(1.f);
 }
 /*CLayerHudAttitude end*/
+
+/*CLayerLightGL start*/
+CLayerLightGL::CLayerLightGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader, float scale)
+	:CLayerGL(scene), m_scale(glm::scale(glm::mat4(1), {scale, scale, scale}))
+{
+	auto lights = m_scene.getLights();
+	m_layerShader = lightShader;
+	m_lightCubes = unique_ptr<CObject3DGL>(new CObject3DGL());
+
+	for (size_t i = 0; i < lights.size(); i++)
+	{
+		if (fabs(lights[i].position.w) <= 0.001f)
+		{
+			m_lightCubes->pushMesh(nullptr);
+		}
+		else
+		{
+			auto mesh = shared_ptr<CMeshGL>(new CCubeMeshGL(m_scale, nullptr, GL_STATIC_DRAW));
+			m_lightCubes->pushMesh(mesh);
+		}
+	}
+}
+
+void CLayerLightGL::draw()
+{
+	auto lights = m_scene.getLights();
+	auto meshes = m_lightCubes->getMeshs();
+	for (size_t i = 0; i < lights.size(); i++)
+	{
+		if (!meshes[i]) continue;
+		glm::vec3 blendColor = glm::clamp(lights[i].ambient + 
+			lights[i].diffuse + lights[i].specular, glm::vec3(0), glm::vec3(1));
+		glm::vec4 color = glm::vec4(blendColor, 1.f);
+		m_lightCubes->setModel(glm::translate(glm::mat4(1), glm::vec3(lights[i].position)));
+		m_layerShader->setUniform4fv(string("color"), glm::value_ptr(color));
+		meshes[i]->draw(m_lightCubes->getModel(), 0, m_layerShader.get());
+	}
+}
+/*CLayerLightGL end*/
 #endif

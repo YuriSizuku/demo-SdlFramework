@@ -75,7 +75,7 @@ bool Explore3DEventSDL(SDL_Event* eventSDL,Camera& camera,
 	}
 	if (flag)
 	{
-		camera.pos += dpos;
+		camera.position += dpos;
 		camera.angle += dangle;
 		camera.fov += dfov;
 		for (int i = 0; i < 3; i++)

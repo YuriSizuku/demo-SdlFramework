@@ -53,7 +53,7 @@ Currently the class is as below:
 
 `CLayerHudAttitude`:  render a small window for viewing the attitude(posture) of the camera
 
-`CLayerLightGL(not finished)`:  generate a cube in the light position for viewing light
+`CLayerLightGL`:  generate a cube in the light position for viewing light
 
 **gl_assets.hpp**
 
@@ -67,17 +67,17 @@ Currently the class is as below:
 
 `CObject3DGL`:  a 3D object for gl rendering, manage multi meshes
 
-`CPlaneGL`: a rectangle unit plane in XOY
+`CPlaneMeshGL`: a rectangle unit plane in XOY
 
-`CCubeGL`:a unit cube in the center
+`CCubeMeshGL`:a unit cube in the center
+
+`CSphereMeshGL`: A unit sphere by a certain latitude and longitude step
 
 ### (3) Physical part
 
 **physics_object.hpp**
 
 `CPhsicalObject`: This object contains physical information, used for physical engine
-
-
 
 ## 2. build
 
@@ -154,3 +154,12 @@ Press `R` to restart. `WASD` to move, `Space` fire bullet, `JK` rotate
 
 ![circle_danmaku](screenshot/circle_danmaku.gif)
 
+### (3) gl phong test
+
+This is a example about rendering the objects by phong method. In this example, there are 3 lights,  1 point light(front white cube), 1 spot light(left white cube), 1 directional light. After rendering the object,  we render the axis on the right to see the attitude of the camera, and every point normal by the geometry shader.
+
+We can explore this scene like a flying game. Press  `wasd` to move the position, `qe` to go up and down,  `uo` to rotate roll, `jl` to rotate the yaw, `ik` to rotate the pitch.
+
+![gl_phong_test](screenshot/gl_phong_test.png)
+
+![gl_phong_test2](screenshot/gl_phong_test2.png)

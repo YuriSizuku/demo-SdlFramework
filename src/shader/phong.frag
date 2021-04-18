@@ -1,6 +1,6 @@
 #version 330 core
 in VS_OUT{
-    vec3 aPos;
+    vec3 aPosition;
     vec2 aTexcoord;
     vec3 aNormal;
     vec3 aTangent;
@@ -118,4 +118,5 @@ void main()
         }
     }
     FragColor = vec4(outcolor, material.alpha);
+    //FragColor = vec4(0.f, 1.f, 1.f, 1.f);
 }

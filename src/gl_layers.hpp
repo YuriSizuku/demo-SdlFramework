@@ -10,6 +10,7 @@
 #include "gl_object3d.hpp"
 
 using std::shared_ptr;
+using std::unique_ptr;
 using std::vector;
 using std::set;
 using std::string;
@@ -131,21 +132,24 @@ public:
 class CLayerHudAttitude : public CLayerHudGL
 {
 private:
-	shared_ptr<CObject3DGL> m_attitude;
+	unique_ptr<CObject3DGL> m_attitude;
 
 public:
 	CLayerHudAttitude(CSceneGL& scene,
 		shared_ptr<CShaderGL> attitudeShader, GLint hudViewPort[4] = NULL);
-	virtual void drawHud();
+	void drawHud();
 };
 
 // generate a cube in the light position for viewing light
 class CLayerLightGL : public CLayerGL
 {
+private:
+	unique_ptr<CObject3DGL> m_lightCubes;
+	glm::mat4 m_scale;
+
 public:
-	CLayerLightGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader);
-	virtual ~CLayerLightGL();
-	virtual void draw();
+	CLayerLightGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader, float scale=0.1f);
+	void draw();
 };
 #endif
 #endif

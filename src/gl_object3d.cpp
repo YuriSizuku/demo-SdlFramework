@@ -59,13 +59,13 @@ void CMeshGL::fillVAO(vector<GLint>& countIndexs)
 	glBindVertexArray(m_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	if (m_ebo != -1) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-	GLint sum = 0, pos = 0;
+	GLint sum = 0, position = 0;
 	for (auto obj : countIndexs) sum += obj;
 	for (size_t i = 0; i < countIndexs.size(); i++)
 	{
-		glVertexAttribPointer(i, countIndexs[i], GL_FLOAT, GL_FALSE, sum * sizeof(GLfloat), (void*)(pos * sizeof(GLfloat)));
+		glVertexAttribPointer(i, countIndexs[i], GL_FLOAT, GL_FALSE, sum * sizeof(GLfloat), (void*)(position * sizeof(GLfloat)));
 		glEnableVertexAttribArray(i);
-		pos += countIndexs[i];
+		position += countIndexs[i];
 	}
 
 	glBindVertexArray(0);
@@ -180,15 +180,26 @@ bool CMeshGL::afterDrawMesh(int shaderIndex, CShaderGL* shader, bool drawed)
 void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, 
 	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene)
 {
+	if (m_vao == -1)
+	{
+		cerr << "ERROR CMeshGL::draw, vao is not initialed" << endl;
+		return;
+	}
+
 	bool drawed = false;
 	auto currentShader = shader;
 	glBindVertexArray(m_vao);
 	if (currentShader == nullptr)
 	{
 		if (m_shaders.find(shaderIndex) != m_shaders.end())
+		{
 			currentShader = m_shaders[shaderIndex].get();
+		}
+		if (currentShader == nullptr)
+		{
+			cerr << "ERROR CMeshGL::draw, no shader for rendering" << endl;
+		}
 	}
-
 	// update the model martrix every time, because the shader can be shared
 	currentShader->setUniformMat4fv(string(MODEL_MATRIX_NAME), glm::value_ptr(objectModel*m_model));
 	currentShader->use();
@@ -301,11 +312,11 @@ CPlaneMeshGL::CPlaneMeshGL( const glm::mat4& model,
 	const shared_ptr<CShaderGL> shader,
 	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
 {
-	GLfloat vbo_buf[]= { // vec3 pos, vec2 texcoord, vec3 normal, vec3 tangent
-		 0.5f,  0.5f, 0, 0,   0,   0, 0, 1.f, 1.f, 0, 0,
-		-0.5f,  0.5f, 0, 1.f, 0,   0, 0, 1.f, 1.f, 0, 0,
-	    -0.5f, -0.5f, 0, 1.f, 1.f, 0, 0, 1.f, 1.f, 0, 0,
-		 0.5f, -0.5f, 0, 0,   1.f, 0, 0, 1.f, 1.f, 0, 0,
+	GLfloat vbo_buf[]= { // vec3 position, vec2 texcoord, vec3 normal, vec3 tangent
+		 0.5f,  0.5f, 0, 1.f, 0,   0, 0, 1.f, 1.f, 0, 0,
+		-0.5f,  0.5f, 0, 0,   0,   0, 0, 1.f, 1.f, 0, 0,
+	    -0.5f, -0.5f, 0, 0,   1.f, 0, 0, 1.f, 1.f, 0, 0,
+		 0.5f, -0.5f, 0, 1.f, 1.f, 0, 0, 1.f, 1.f, 0, 0,
 	};
 	for (std::pair<int, glm::vec2> it: texcoords)
 	{
@@ -390,10 +401,10 @@ CCubeMeshGL::CCubeMeshGL(const glm::mat4& model,
 		}
 
 		glm::vec2 _texcoords[4] = {
-			{ 0.f,0.f },
 			{ 1.f, 0.f },
-			{ 1.f, 1.f },
-			{0.f, 1.f}
+			{ 0.f, 0.f },
+			{ 0.f, 1.f },
+			{ 1.f, 1.f}
 		};
 		for (int j = 0; j < 4; j++)
 		{
@@ -428,5 +439,99 @@ CCubeMeshGL::CCubeMeshGL(const glm::mat4& model,
 /*CCubeMeshGL end*/
 
 /*CSphereMeshGL start*/
+CSphereMeshGL::CSphereMeshGL(const glm::mat4& model,
+	const shared_ptr<CShaderGL> shader, GLenum usage,
+	float stepLatitude, float stepLongitude,
+	glm::vec2 startTexcoord , glm::vec2 endTexcoord)
+	:CMeshGL(model, shader)
+{
+	int vn = static_cast<int>(glm::radians(180.f) / stepLatitude);
+	int un = static_cast<int>(glm::radians(360.f) / stepLongitude);
+	int vertexs_count = 2 + (vn+1-2)*un;
+	int ebo_count = 2 * 3 * un + (vn+1-2)*6*un;
+	Vertex* vertexs = new Vertex[vertexs_count];
+	GLint* ebo_buf = new GLint[ebo_count];
+
+	// calculate vbo
+	vertexs[0].position = { 0.f, 0.5f, 0.f }; // north polar
+	vertexs[0].texcoord = {(startTexcoord.s + endTexcoord.s)/2.f, startTexcoord.t};
+	vertexs[0].normal = { 0.f, 1.f, 0.f }; 
+	vertexs[0].tangent = { 1.f, 0.f, 0.f };
+	vertexs[vertexs_count - 1].position = { 0.f, -0.5f, 0.f }; // south polar
+	vertexs[vertexs_count - 1].texcoord = { (startTexcoord.s + endTexcoord.s) / 2.f, endTexcoord.t};
+	vertexs[vertexs_count - 1].normal = { 0.f, -1.f, 0.f };
+	vertexs[vertexs_count - 1].tangent = { -1.f, 0.f, 0.f };
+	for (int i = 1; i < vn; i++) // latitude without polar
+	{
+		for (int j = 0; j < un; j++) // longitude cycle
+		{
+			int idx = 1 + (i - 1) * un + j;
+			float theta = j * stepLongitude;
+			float phi = glm::radians(90.f) - i * stepLatitude;
+			vertexs[idx].normal = { cos(phi) * cos(theta), sin(phi), cos(phi) * sin(theta)};
+			vertexs[idx].tangent = { -cos(phi) * sin(theta), 0.f, cos(phi) * cos(theta) };
+			vertexs[idx].position = vertexs[idx].normal / 2.f;
+			vertexs[idx].texcoord = {
+				startTexcoord.s + (endTexcoord.s - startTexcoord.s) * (j * stepLongitude / glm::radians(360.f)),
+				startTexcoord.t + (endTexcoord.t - startTexcoord.t) * (i * stepLatitude / glm::radians(180.f)) };
+		}
+	}
+
+	// calculate ebo
+	int point_offset = 1;
+	int ebo_offset = 0;
+	for (int j = 0; j < un; j++) // layer 0(north polar)->1, triangle
+	{
+		ebo_buf[ebo_offset] = 0;
+		ebo_buf[ebo_offset + 1] = point_offset + 1;
+		ebo_buf[ebo_offset + 2] = point_offset ;
+		if (j == un - 1) // for loop
+		{
+			ebo_buf[ebo_offset + 1] -= un;
+		}
+		point_offset++;
+		ebo_offset += 3;
+	}
+	for (int i = 2; i < vn; i++) // layer 1 -> n-1, rectangle
+	{
+		for (int j = 0;j < un; j++)
+		{
+			ebo_buf[ebo_offset] = point_offset - un;
+			ebo_buf[ebo_offset + 1] = point_offset - un + 1;
+			ebo_buf[ebo_offset + 2] = point_offset  + 1;
+			ebo_buf[ebo_offset + 3] = point_offset  + 1;
+			ebo_buf[ebo_offset + 4] = point_offset  ;
+			ebo_buf[ebo_offset + 5] = point_offset - un;
+			if (j == un - 1) // for loop
+			{
+				ebo_buf[ebo_offset + 1] -= un;
+				ebo_buf[ebo_offset + 2] -= un;
+				ebo_buf[ebo_offset + 3] -= un;
+			}
+			point_offset++;
+			ebo_offset += 6;
+		}
+	}
+	point_offset -= un;
+	for (int j = 0; j < un; j++) // layer n-1 -> n(south polar), triangle
+	{
+		ebo_buf[ebo_offset] = point_offset;
+		ebo_buf[ebo_offset + 1] = point_offset + 1;
+		ebo_buf[ebo_offset + 2] = vertexs_count - 1;
+		if (j == un - 1) // for loop
+		{
+			ebo_buf[ebo_offset + 1] -= un;
+		}
+		point_offset++;
+		ebo_offset += 3;
+	}
+	
+	fillVBO(vertexs_count * sizeof(Vertex), vertexs);
+	fillEBO(ebo_count * sizeof(GLint), ebo_buf);
+	fillVAO();
+	delete[] vertexs;
+	delete[] ebo_buf;
+	glCheckError();
+}
 /*CSphereMeshGL end*/
 #endif

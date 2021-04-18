@@ -40,7 +40,7 @@ glm::mat4 CalcView(const Camera& camera)
 		sin(camera.angle.p),
 		cos(camera.angle.p) * sin(camera.angle.y));
 	glm::vec3 up(sin(camera.angle.r), cos(camera.angle.r), 0.f); // angle start is 90
-	return glm::lookAt(camera.pos, camera.pos + direction, up);
+	return glm::lookAt(camera.position, camera.position + direction, up);
 }
 
 glm::mat4 CalcProjection(const Camera& camera)
@@ -72,6 +72,8 @@ CSceneGL::CSceneGL()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
 	glEnable(GL_MULTISAMPLE);
 	glCheckError();
 }

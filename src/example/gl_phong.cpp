@@ -28,6 +28,7 @@ public:
     {
         addShader("debug_normal");
         addShader("debug_attitude");
+        addShader("debug_light");
     }
 
     void initLights()
@@ -45,7 +46,7 @@ public:
         
         // point light
         Light light2 = light;
-        light2.position = { 0.f, 0.f, 1.f, 1.f };
+        light2.position = { -0.1f, 0.2f, 1.f, 1.f };
         light2.ambient *= 0.f;
 
         // spot light
@@ -66,15 +67,18 @@ public:
         auto layer = shared_ptr<CLayerGL>(new CLayerPhongGL(*this));
         auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
         auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
+        auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         this->pushLayer(layer);
-        this->pushLayer(layer_normal);
+        //this->pushLayer(layer_normal);
         this->pushLayer(layer_attitude);
+        this->pushLayer(layer_light); 
     }
 
     void initObjects()
     {
         // load images
         int w, h, c;
+        //stbi_set_flip_vertically_on_load(1);
         auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);
         auto tex = shared_ptr<CTexture2DGL>(new CTexture2DGL(w, h));
         tex->texImage2D(imgdata);
@@ -89,6 +93,12 @@ public:
         _material->shininess = 25.f;
         _material->alpha = 1.f;
         auto material = shared_ptr<void>(_material);
+        auto _material2 = new MaterialPhong;
+        memcpy(_material2, _material, sizeof(*_material));
+        _material2->ambient = glm::vec3(0.3f);
+        _material2->diffuse = glm::vec3(0.6f);
+        _material2->specular = glm::vec3(0.2f);
+        auto material2 = shared_ptr<void>(_material2);
 
         // plane
         glm::mat4 model;
@@ -96,7 +106,7 @@ public:
         model = glm::rotate(model, glm::radians(-60.f), glm::vec3(1.f, 0, 0));
         model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
         auto planeMesh = shared_ptr<CPlaneMeshGL>(new CPlaneMeshGL());
-        planeMesh->setMaterial(material);
+        planeMesh->setMaterial(material2);
         planeMesh->setShader(m_shaders[SHADER_DEFAULT]);
         planeMesh->addTexture("misuzu", tex);
         auto planeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, planeMesh));
@@ -113,6 +123,16 @@ public:
         cubeMesh->addTexture("misuzu", tex);
         auto cubeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, cubeMesh));
         m_objects.pushObject(cubeObject);
+
+        // sphere
+        model = glm::translate(glm::mat4(1), glm::vec3(-1.f, 1.f, 0.f));
+        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 0.5f));
+        auto sphereMesh = shared_ptr<CSphereMeshGL>(new CSphereMeshGL());
+        sphereMesh->setMaterial(material2);
+        sphereMesh->setShader(m_shaders[SHADER_DEFAULT]);
+        sphereMesh->addTexture("misuzu", tex);
+        auto sphereObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, sphereMesh));
+        m_objects.pushObject(sphereObject);
     }
 
     void handleEvent(void* event)  
@@ -121,8 +141,8 @@ public:
             0.1f, glm::radians(1.f), glm::radians(1.f));
         if (ret)
         {
-            SDL_Log("pos(%f %f %f), angle(p=%f y=%f r=%f)",  
-                m_camera.pos.x, m_camera.pos.y, m_camera.pos.z, 
+            SDL_Log("position(%f %f %f), angle(p=%f y=%f r=%f)",  
+                m_camera.position.x, m_camera.position.y, m_camera.position.z, 
                 glm::degrees(m_camera.angle.p), glm::degrees(m_camera.angle.y), glm::degrees(m_camera.angle.r)); 
         }
         if (static_cast<SDL_Event*>(event)->key.keysym.scancode == SDL_SCANCODE_R)
@@ -154,7 +174,8 @@ void start()
     stage_manager->pushStage(stage);
     app.prepareStageManager(stage_manager);
     app.setBackground(0xff, 0xc0, 0xcb);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
+    //glDisable(GL_CULL_FACE);
     //app.setBackground(0xff, 0xff, 0xff);
     //app.setFps(288);
     app.run();

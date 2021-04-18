@@ -60,7 +60,7 @@ typedef struct MaterialPhong
 // defines the structure of vertex attribution
 typedef struct Vertex
 {
-	glm::vec3 pos;
+	glm::vec3 position;
 	glm::vec2 texcoord;
 	glm::vec3 normal;
 	glm::vec3 tangent;
@@ -69,7 +69,7 @@ typedef struct Vertex
 // a camera struct combined with view and porject matrix
 typedef struct Camera
 {
-	glm::vec3 pos = { 0.f,0.f,3.f };
+	glm::vec3 position = { 0.f,0.f,3.f };
 	glm::vec3 angle = { glm::radians(0.f),glm::radians(-90.f),glm::radians(0.f) }; // roll, yaw, pitch
 	float fov = glm::radians(45.f), aspect = 16.f / 9.f, zNear = 0.1f, zFar = 100.f;
 }Camera;
