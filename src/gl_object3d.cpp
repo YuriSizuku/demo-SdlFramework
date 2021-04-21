@@ -177,8 +177,8 @@ bool CMeshGL::afterDrawMesh(int shaderIndex, CShaderGL* shader, bool drawed)
 	return true;
 }
 
-void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, 
-	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene)
+void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, bool useTextures, 
+	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene, void* data1, void* data2)
 {
 	if (m_vao == -1)
 	{
@@ -203,21 +203,28 @@ void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader,
 	// update the model martrix every time, because the shader can be shared
 	currentShader->setUniformMat4fv(string(MODEL_MATRIX_NAME), glm::value_ptr(objectModel*m_model));
 	currentShader->use();
-	for (auto it : m_textures) // active and bind each textures for the object
+	if (useTextures)
 	{
-		it.second->active();
-		it.second->bind();
+		for (std::pair<string, shared_ptr<CTextureGL>> it : m_textures) // active and bind each textures for the object
+		{
+			it.second->active();
+			it.second->bind();
+		}
 	}
-	if (pfnMeshSetCallback) pfnMeshSetCallback(shaderIndex, this, scene);
+
+	if (pfnMeshSetCallback) pfnMeshSetCallback(shaderIndex, this, scene, data1, data2);
 	if (beforeDrawMesh(shaderIndex, shader))
 	{
 		if (m_ebo != -1) glDrawElements(m_drawMode, m_eboCount, GL_UNSIGNED_INT, (void*)0);
 		else glDrawArrays(m_drawMode, 0, m_vboCount);
 		drawed = true;
 	}
-	for (auto it : m_textures) // unbind all textures
+	if (useTextures)
 	{
-		it.second->unbind();
+		for (std::pair<string, shared_ptr<CTextureGL>> it : m_textures) // unbind all textures
+		{
+			it.second->unbind();
+		}
 	}
 	afterDrawMesh(shaderIndex, shader, drawed);
 	glBindVertexArray(0);
@@ -289,17 +296,17 @@ bool CObject3DGL::afterDrawObject(int shaderIndex, CShaderGL* shader, bool drawe
 	return true;
 }
 
-void CObject3DGL::draw(int shaderIndex, CShaderGL* shader, 
+void CObject3DGL::draw(int shaderIndex, CShaderGL* shader, bool useTextures, 
 	PFNCOBJECT3DGLCB pfnObjectSetCallback, 
-	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene)
+	PFNCMESHGLCB pfnMeshSetCallback, CSceneGL* scene, void* data1, void* data2)
 {
 	bool drawed = false;
-	if (pfnObjectSetCallback) pfnObjectSetCallback(shaderIndex, this, scene);
+	if (pfnObjectSetCallback) pfnObjectSetCallback(shaderIndex, this, scene, data1, data2);
 	if (beforeDrawObject(shaderIndex, shader))
 	{
-		for (auto it : m_meshes)
+		for (shared_ptr<CMeshGL>& it : m_meshes)
 		{
-			it->draw(m_model, shaderIndex, shader, pfnMeshSetCallback);
+			it->draw(m_model, shaderIndex, shader, useTextures, pfnMeshSetCallback, scene, data1, data2);
 		}
 		drawed = true;
 	}

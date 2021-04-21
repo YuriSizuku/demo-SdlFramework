@@ -21,6 +21,8 @@ class CTextureGL;
 class CObject3DGL;
 typedef struct Light Light;
 typedef struct MaterialPhong MaterialPhong;
+typedef void (*PFNCOBJECT3DGLCB)(int shaderIndex, CObject3DGL* object, CSceneGL* scene, void* data1, void* data2);
+typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, void* data1, void* data2);
 #define STCFIELDSTRING(STC, FIELD) string(STC##"."##FIELD)
 #define STCIFIELDSTRING(STC, INDEX, FIELD) string(STC) +"["+ to_string(INDEX) +"]."+ string(FIELD)
 
@@ -49,15 +51,34 @@ protected:
 	size_t m_layerIndex;
 	shared_ptr<CShaderGL> m_layerShader;
 	shared_ptr<CTextureGL> m_inFrameBuffer, m_outFrameBuffer; // in Frame is the from last
+	GLint m_scrViewport[4];
+	GLint m_frameViewport[4];
+	GLuint m_frameBuffer = -1;
+	GLenum m_frameAttachment = 0;
 
 protected:
-	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader);
+	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool useTextures = true, 
+		PFNCOBJECT3DGLCB pfnObjectSetCallback = NULL,
+		PFNCMESHGLCB pfnMeshSetCallback = NULL, 
+		void* data1=NULL, void *data2=NULL);
+	virtual void drawSceneObjects(CShaderGL* shader, bool useTextures=true,
+		PFNCOBJECT3DGLCB pfnObjectSetCallback = NULL,
+		PFNCMESHGLCB pfnMeshSetCallback = NULL,
+		void* data1 = NULL, void* data2 = NULL);
 	virtual bool beforeDrawLayer(); // set unifroms and values here
 	virtual bool afterDrawLayer(bool drawed);
 public:
 	CLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader = nullptr,
 		shared_ptr<CTextureGL> outFrameBuffer = nullptr);
-	void setInFramebuffer(shared_ptr<CTextureGL> inFrameBuffer);
+	GLint* getScrViewport();
+	GLint* getFrameViewport();
+	void setScrViewport(int x, int y, int w, int h);
+	void setFrameViewport(int x, int y, int w, int h);
+	GLenum getFrameAttachment();
+	void setInFrameBuffer(shared_ptr<CTextureGL> inFrameBuffer);
+	void setOutFrameBuffer(shared_ptr<CTextureGL> outFrameBuffer, 
+		GLenum attachment= GL_COLOR_ATTACHMENT0, GLint level=0);
+	shared_ptr<CTextureGL> getInFrameBuffer();
 	shared_ptr<CTextureGL> getOutFrameBuffer();
 	virtual ~CLayerGL();
 	virtual void draw();
@@ -72,53 +93,47 @@ protected:
 	// give the uniform information to shaders seperately
 	void setLightUniform(Light* light, CShaderGL* shader, int i);
 	virtual bool beforeDrawLayer();
-	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader);
+	virtual void drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool useTextures = true,
+		PFNCOBJECT3DGLCB pfnObjectSetCallback = NULL,
+		PFNCMESHGLCB pfnMeshSetCallback = NULL,
+		void* data1 = NULL, void* data2 = NULL);
 public:
 	CLayerPhongGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader = nullptr,
 		shared_ptr<CTextureGL> outFrameBuffer = nullptr);
 };
 
 // generate the shadow map by every light, point light, direction light
-// combine all light shadow positions to shadowMapTexture (in clip space)
-class CShadowMapLayerGL : public CLayerGL
+// and then draw the shadow on the buffer
+class CLayerShadowGL : public CLayerGL
 {
 private:
-	shared_ptr<CTextureGL> m_shadowMapTexture;
+	unique_ptr<CTexture2DGL> m_shadowMapTexture;
+	shared_ptr<CShaderGL> m_shadowMapShader;
 
+protected: 
+	void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture);
 public:
-	void genLightShadowMap(Light* light);
-	CShadowMapLayerGL(CSceneGL& scene, shared_ptr<CTextureGL> shadowMapTexture);
+	CLayerShadowGL(CSceneGL& scene,  shared_ptr<CShaderGL> shadowMapShader, 
+					  shared_ptr<CShaderGL> shadowShader, 
+	                  GLint width=1024, GLint height=1024, GLint level=0);
 	virtual void draw();
 };
 
 // Dynamic Environment Mapping: viewing to each direction (without shadow)
 // generate the enviroment map(cube map) by randering every object in 6 directions
-class CEnviromentLayerGL : public CLayerGL
+class CLayerEnviromentGL : public CLayerGL
 {
 private:
 	shared_ptr<CTextureCubeGL> m_enviromentMapTexture;
 
 public:
-	CEnviromentLayerGL(CSceneGL& scene, shared_ptr<CTextureCubeGL> m_enviromentMapTexture);
-	virtual void draw();
-};
-
-// blend all textures(such as shallow, reflect, sky box) for defered rendering  
-class CBlendLayerGL :public CLayerGL
-{
-private:
-	vector<shared_ptr<CTextureGL>> m_textures;
-
-public:
-	CBlendLayerGL(CSceneGL& scene, vector<shared_ptr<CTextureGL>>& textures);
+	CLayerEnviromentGL(CSceneGL& scene, shared_ptr<CTextureCubeGL> m_enviromentMapTexture);
 	virtual void draw();
 };
 
 // show the small window for debug information as HUD
 class CLayerHudGL : public CLayerGL
 {
-protected:
-	GLint m_orgViewport[4], m_hudViewPort[4];
 
 public:
 	CLayerHudGL(CSceneGL& scene,

@@ -18,8 +18,8 @@ using std::string;
 class CObject3DGL;
 class CMeshGL;
 class CSceneGL;
-typedef void (*PFNCOBJECT3DGLCB)(int shaderIndex, CObject3DGL* object, CSceneGL* scene);
-typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene);
+typedef void (*PFNCOBJECT3DGLCB)(int shaderIndex, CObject3DGL* object, CSceneGL* scene, void* data1, void* data2);
+typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, void* data1, void* data2);
 #define MODEL_MATRIX_NAME "model"
 
 // contains vao, vbo, ebo, textures and shaders for each layer
@@ -79,9 +79,10 @@ public:
 	virtual ~CMeshGL();
 	// draw the obejct using the m_shaders, or extern shader
 	// use pfnMeshSetCallback to set the unifroms by the layer
-	virtual void draw(glm::mat4& objectModel=glm::mat4(1), 
-		int shaderIndex = 0, CShaderGL* shader = nullptr,
-		PFNCMESHGLCB pfnMeshSetCallback=NULL, CSceneGL* scene = NULL);
+	virtual void draw(glm::mat4& objectModel = glm::mat4(1),
+		int shaderIndex = 0, CShaderGL* shader = nullptr, bool useTextures = true, 
+		PFNCMESHGLCB pfnMeshSetCallback=NULL, CSceneGL* scene = NULL, 
+		void* data1=NULL, void* data2=NULL);
 };
 
 // a 3D object for gl rendering, manage multi meshes
@@ -109,9 +110,10 @@ public:
 	glm::mat4& getModel();
 	void setModel(const glm::mat4& model);
 	// pfnObjectSetCallback, pfnMeshSetCallback is for layer to set values
-	virtual void draw(int shaderIndex = 0, CShaderGL* shader = nullptr, 
+	virtual void draw(int shaderIndex = 0, CShaderGL* shader = nullptr, bool useTextures = true,
 		PFNCOBJECT3DGLCB pfnObjectSetCallback = NULL, 
-		PFNCMESHGLCB pfnMeshSetCallback = NULL, CSceneGL* scene=NULL);
+		PFNCMESHGLCB pfnMeshSetCallback = NULL, CSceneGL* scene=NULL,
+		void* data1 = NULL, void* data2 = NULL);
 	virtual ~CObject3DGL();
 };
 

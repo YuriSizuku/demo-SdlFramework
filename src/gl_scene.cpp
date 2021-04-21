@@ -283,7 +283,7 @@ void CSceneGL::render()
 	for (auto layer : m_layers)
 	{
 		if (layer == nullptr) continue;
-		layer->setInFramebuffer(inFrameBuffer);
+		layer->setInFrameBuffer(inFrameBuffer);
 		layer->draw();
 		inFrameBuffer = layer->getOutFrameBuffer();
 	}

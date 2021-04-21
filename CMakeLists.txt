@@ -133,8 +133,19 @@ target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_externlib(${DEMO_NAME})
 
-# gl test
-set(DEMO_NAME gl_phong)
+# gl pbong test
+set(DEMO_NAME gl_phong_demo)
+add_executable(${DEMO_NAME}
+    src/example/${DEMO_NAME}.cpp
+    ${SDL_FRAMEWORK_CODE}
+    ${GL_FRAMEWORK_CODE})
+target_include_directories(${DEMO_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+config_externlib(${DEMO_NAME})
+copy_assets(${DEMO_NAME})
+
+# gl shadow test
+set(DEMO_NAME gl_shadow_demo)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
     ${SDL_FRAMEWORK_CODE}

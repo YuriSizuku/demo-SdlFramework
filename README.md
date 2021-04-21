@@ -43,11 +43,9 @@ Currently the class is as below:
 
 `CLayerGL`:  the layer for rendering, for using different shaders or defered rendering
 
-`CShadowMapLayerGL(not finished)`:  generate the shadow map by every light, point light, direction light
+`CLayerShadowGL(not finished)`:  generate the shadow map by every light, point light, direction light
 
-`CEnviromentLayerGL(not finished)`:  Dynamic Environment Mapping: viewing to each direction (without shadow)
-
-`CBlendLayerGL(not finished)`:  blend all textures(such as shallow, reflect, sky box) for defered rendering  
+`CLayerEnviromentGL(not finished)`:  Dynamic Environment Mapping: viewing to each direction (without shadow)
 
 `CLayerHudGL`: show the small window for debug information as HUD
 

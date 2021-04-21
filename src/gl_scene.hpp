@@ -126,14 +126,6 @@ public:
 	bool addTexture(string textureName, shared_ptr<CTextureGL> texture);
 	bool removeTexture(string textureName);
 
-#if(0)
-	// defered render
-	virtual void createGbuffer();
-	virtual void renderEnviromentMap();
-	virtual void renderShadowMap();
-	virtual void renderBlendShadowMap();
-	virtual void renderBlendEnviromentMap();
-#endif
 	virtual void render();
 	virtual ~CSceneGL();
 };
