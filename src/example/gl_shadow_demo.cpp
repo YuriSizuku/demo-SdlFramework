@@ -29,15 +29,15 @@ public:
         addShader("debug_attitude");
         addShader("debug_light");
         addShader("shadow"); 
-        addShader("shadowmap");  
+        addShader("depthmap");  
     }
 
     void initLights()
     {
         // directional light
         Light light;
-        light.position = glm::vec4(0, 5.f, 10.f, 0.f);
-        light.direction = { 0.f, -5.f, 10.f };
+        light.position = { 0, 1.f, -2.f, 0.f };
+        light.direction = { 0.f, -10.f, 10.f };
         light.diffuse = { 1.f, 1.f, 1.f };
         light.ambient = { 1.f, 1.f, 1.f };
         light.specular = { 1.f, 1.f, 1.f };
@@ -58,26 +58,31 @@ public:
         light3.outerCutoff = glm::radians(40.f);
         light2.ambient *= 0.f;
 
-        pushLight(light);
+        pushLight(light); 
         //pushLight(light2);
         //pushLight(light3);
     }
 
     void initLayers()
     {
-        auto layer_phong = shared_ptr<CLayerGL>(new CLayerPhongGL(*this));
-        auto layer_shadow = shared_ptr<CLayerGL>(new CLayerShadowGL(*this, getShaders()["shadowmap"], getShaders()["shadow"]));
-        auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
-        auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
-        //this->pushLayer(layer_phong);
+        auto layer_phong = shared_ptr<CLayerPhongGL>(new CLayerPhongGL(*this));
+        auto layer_shadow = shared_ptr<CLayerShadowGL>(new CLayerShadowGL(*this, getShaders()["depthmap"], getShaders()["shadow"], 1024, 1024));
+        auto layer_attitude = shared_ptr<CLayerHudAttitude>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
+        auto layer_light = shared_ptr<CLayerLightGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
+           
+        float orthoParams[6] = { -2.f, 2.f, -2.f, 2.f, 0.1f, 5.f };
+        layer_shadow->setOrthoParams(orthoParams);
+        layer_shadow->enableCullFront(false);
+        layer_shadow->setBias(0.005f, 0.05f);
+        this->pushLayer(layer_phong); 
         this->pushLayer(layer_shadow);
-        this->pushLayer(layer_attitude);
-        this->pushLayer(layer_light); 
+        this->pushLayer(layer_attitude); 
+        this->pushLayer(layer_light);  
     }
 
     void initObjects()
     {
-        // load images
+        // load images 
         int w, h, c;
         //stbi_set_flip_vertically_on_load(1);
         auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);
@@ -95,7 +100,7 @@ public:
         _material->alpha = 1.f;
         auto material = shared_ptr<void>(_material);
         auto _material2 = new MaterialPhong;
-        memcpy(_material2, _material, sizeof(*_material));
+        memcpy(_material2, _material, sizeof(*_material)); 
         _material2->ambient = glm::vec3(0.2f);
         _material2->diffuse = glm::vec3(0.8f);
         _material2->specular = glm::vec3(0.9f);
@@ -114,22 +119,22 @@ public:
         auto planeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, planeMesh));
         m_objects.pushObject(planeObject);
 
-        // cube 
+        // cube
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f));
-        //model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); // then pitch
+        //model = glm::rotate(model, glm::radians(30.f), glm::vec3(1.f, 0.f, 0.f)); // then pitch 
         model = glm::rotate(model, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f)); // yaw first
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 0.5f));
         auto cubeMesh = shared_ptr<CCubeMeshGL>(new CCubeMeshGL());
         cubeMesh->setMaterial(material);
         cubeMesh->setShader(m_shaders[SHADER_DEFAULT]);
         cubeMesh->addTexture("misuzu", tex);
-        auto cubeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, cubeMesh));
+        auto cubeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, cubeMesh)); 
         m_objects.pushObject(cubeObject);
 
         // sphere
-        model = glm::translate(glm::mat4(1), glm::vec3(-1.f, 1.f, 0.f));
+        model = glm::translate(glm::mat4(1), glm::vec3(-1.f, 0.f, 1.f));
         //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 0.5f));
-        auto sphereMesh = shared_ptr<CSphereMeshGL>(new CSphereMeshGL());
+        auto sphereMesh = shared_ptr<CSphereMeshGL>(new CSphereMeshGL(glm::mat4(1), nullptr, GL_STATIC_DRAW, glm::radians(10.f), glm::radians(5.f)));
         sphereMesh->setMaterial(material2);
         sphereMesh->setShader(m_shaders[SHADER_DEFAULT]);
         sphereMesh->addTexture("misuzu", tex);
@@ -163,9 +168,10 @@ public:
 
 void start()
 {
-    string title = "gl shadow";
+    string title = "gl shadow"; 
     CAppSDL app;
-    app.prepareGL();
+    app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); 
+    //app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_CORE);
     app.enableGL(true);
     app.prepareWindow(title, 1280, 720);
 
@@ -184,7 +190,7 @@ void start()
 int main(int argc, char* argv[])
 {
     start();
-#if(defined(_WIN32) || defined(_DEBUG))
+#if(defined(_WIN32) || defined(_DEBUG)) 
     _CrtDumpMemoryLeaks(); // const string will not destruct before main end
 #endif
     return 0;

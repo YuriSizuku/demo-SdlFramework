@@ -106,8 +106,13 @@ public:
 
 class CTexture3DGL :public CTextureGL
 {
+protected: 
+	GLsizei m_depth;
+
 public:
-	CTexture3DGL(GLenum target);
+	CTexture3DGL(GLenum target, GLenum aciveIndex = GL_TEXTURE0);
+	CTexture3DGL(GLenum target, GLsizei width, GLsizei height, GLsizei depth,
+		GLenum aciveIndex = GL_TEXTURE0, GLenum internalFormat = GL_RGBA);
 	void texImage3D(GLint level, GLint internalFormat,
 		GLsizei width, GLsizei height, GLsizei depth,
 		GLint border, GLenum format, GLenum type, const GLvoid* data);
@@ -118,12 +123,19 @@ public:
 
 class CTextureCubeGL : public CTextureGL
 {
+protected:
+	GLint m_faceTextures[6] = { -1, -1, -1, -1, -1, -1 }; // genbuffer if -1 when use
+
 public:
+	CTextureCubeGL(GLenum aciveIndex = GL_TEXTURE0);
 	CTextureCubeGL(GLsizei width, GLsizei height,
-		GLint internalFormat = GL_RGBA);
+		GLenum aciveIndex = GL_TEXTURE0, GLenum internalFormat = GL_RGBA);
+	void setFaceTextures(GLuint faceTextures[6]);
+	GLuint* getFaceTextures();
 	void texImage2DI(GLenum i, GLint level, GLint internalFormat,
 		GLsizei width, GLsizei height, GLint border,
 		GLenum format, GLenum type, const GLvoid* data);
+	virtual ~CTextureCubeGL();
 };
 
 #endif

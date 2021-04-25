@@ -6,13 +6,12 @@ layout (location=3) in vec3 aTangent;
 
 uniform mat4 model, view, projection;
 
-out VS_OUT
-{
+out VS_OUT{
     vec3 aPosition;
     vec2 aTexcoord;
     vec3 aNormal;
     vec3 aTangent;
-    vec4 fragPos; // world pos
+    vec4 worldPosition; // world pos
     mat3 worldTBN;
 } vs_out;
 
@@ -36,6 +35,6 @@ void main()
     vs_out.worldTBN = CalcWorldTBN(model, aTangent, aNormal);
     
     // calculate vertex position
-    vs_out.fragPos =  model * vec4(aPosition.xyz, 1.f);
-    gl_Position = projection * view * vs_out.fragPos;
+    vs_out.worldPosition =  model * vec4(aPosition.xyz, 1.f);
+    gl_Position = projection * view * vs_out.worldPosition;
 }

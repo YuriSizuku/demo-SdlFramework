@@ -26,7 +26,9 @@ typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, vo
 #define STCFIELDSTRING(STC, FIELD) string(STC##"."##FIELD)
 #define STCIFIELDSTRING(STC, INDEX, FIELD) string(STC) +"["+ to_string(INDEX) +"]."+ string(FIELD)
 
-#define VIEWPOS_NAME "viewPos"
+// for light
+#define CAMERAPOS_NAME "cameraPosition"
+#define LIGHT_NAME "light"
 #define LIGHTS_NAME "lights"
 #define LIGHT_NUM_NAME "lightsNum"
 #define POSITION_NAME "position"
@@ -36,6 +38,7 @@ typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, vo
 #define CUTOFF_NAME "cutoff"
 #define OUTERCUTOFF_NAME "outerCutoff"
 
+// for material 
 #define MATERIAL_NAME "material"
 #define AMBIENT_NAME "ambient"
 #define DIFFUSE_NAME "diffuse"
@@ -43,17 +46,25 @@ typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, vo
 #define SHININESS_NAME "shininess"
 #define ALPHA_NAME "alpha"
 
-// use multi layer for defered rendering, inFrameBuffer -> outFrameBuffer
+// for shadow
+#define LIGHTMATRIX_NAME "lightMatrix"
+#define LIGHTMATRIXS_NAME "lightMatrixs"
+#define SHADOWMAP2D_NAME "shadowMap2D"
+#define SHADOWMAPCUBE_NAME "shadowMapCube"
+#define BIASMIN_NAME "biasMin"
+#define BIASMAX_NAME "biasMax"
+
+// use multi layer for defered rendering, inFrameTexture -> outFrameTexture
 class CLayerGL
 {
 protected:
 	CSceneGL& m_scene;
 	size_t m_layerIndex;
 	shared_ptr<CShaderGL> m_layerShader;
-	shared_ptr<CTextureGL> m_inFrameBuffer, m_outFrameBuffer; // in Frame is the from last
+	shared_ptr<CTextureGL> m_inFrameTexture, m_outFrameTexture; // in Frame is the from last
 	GLint m_scrViewport[4];
 	GLint m_frameViewport[4];
-	GLuint m_frameBuffer = -1;
+	GLuint m_outFBO = -1;
 	GLenum m_frameAttachment = 0;
 
 protected:
@@ -75,8 +86,8 @@ public:
 	void setScrViewport(int x, int y, int w, int h);
 	void setFrameViewport(int x, int y, int w, int h);
 	GLenum getFrameAttachment();
-	void setInFrameBuffer(shared_ptr<CTextureGL> inFrameBuffer);
-	void setOutFrameBuffer(shared_ptr<CTextureGL> outFrameBuffer, 
+	void setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture);
+	void setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture, 
 		GLenum attachment= GL_COLOR_ATTACHMENT0, GLint level=0);
 	shared_ptr<CTextureGL> getInFrameBuffer();
 	shared_ptr<CTextureGL> getOutFrameBuffer();
@@ -107,15 +118,26 @@ public:
 class CLayerShadowGL : public CLayerGL
 {
 private:
-	unique_ptr<CTexture2DGL> m_shadowMapTexture;
-	shared_ptr<CShaderGL> m_shadowMapShader;
+	shared_ptr<CTexture2DGL> m_depthMap2D; // for directional light, spot light
+	shared_ptr<CTextureCubeGL> m_depthMapCube; // for point light
+	int m_depthMapWidth, m_depthMapHeight;
+	float m_orthoParams[6] = {-10.f, 10.f, -10.f, 10.f, 0.1f, 10.f};
+	shared_ptr<CShaderGL> m_depthMapShader;
+	GLuint m_depthMapFBO = -1;
+	bool m_useCullFront = true;
+	GLfloat m_biasMin = 0.f, m_biasMax = 0.f; // bias for Shadow Acne problem
 
 protected: 
 	void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture);
 public:
-	CLayerShadowGL(CSceneGL& scene,  shared_ptr<CShaderGL> shadowMapShader, 
+	CLayerShadowGL(CSceneGL& scene,  shared_ptr<CShaderGL> depthMapShader, 
 					  shared_ptr<CShaderGL> shadowShader, 
 	                  GLint width=1024, GLint height=1024, GLint level=0);
+	void setOrthoParams(float *orthoParams);
+	float* getOrthoParmas();
+	bool enableCullFront(bool useCullFront);
+	void setBias(GLfloat biasMin, GLfloat biasMax);
+	virtual ~CLayerShadowGL();
 	virtual void draw();
 };
 

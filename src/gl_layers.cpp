@@ -1,6 +1,8 @@
 #ifdef USE_OPENGL
 #include <iostream>
 #include "gl_layers.hpp"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -13,14 +15,14 @@ CLayerGL::CLayerGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader,
 {
 	m_layerIndex = scene.getLayers().size();
 	glGetIntegerv(GL_VIEWPORT, m_scrViewport);
-	setOutFrameBuffer(outFrameBuffer);
+	setOutFrameTexture(outFrameBuffer);
 	memset(m_frameViewport, 0, sizeof(m_frameViewport));
 }
 
 CLayerGL::~CLayerGL()
 {
-	if(m_frameBuffer!=-1) glDeleteFramebuffers(1, &m_frameBuffer);
-	m_frameBuffer = -1;
+	if(m_outFBO!=-1) glDeleteFramebuffers(1, &m_outFBO);
+	m_outFBO = -1;
 }
 
 GLint* CLayerGL::getScrViewport()
@@ -50,43 +52,46 @@ GLenum CLayerGL::getFrameAttachment()
 	return m_frameAttachment;
 }
 
-void CLayerGL::setInFrameBuffer(shared_ptr<CTextureGL> inFrameBuffer)
+void CLayerGL::setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture)
 {
-	m_inFrameBuffer = inFrameBuffer;
+	m_inFrameTexture = inFrameTexture;
 }
 
-void CLayerGL::setOutFrameBuffer(shared_ptr<CTextureGL> outFrameBuffer, 
+void CLayerGL::setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture, 
 	GLenum attachment, GLint level)
 {
-	m_outFrameBuffer = outFrameBuffer;
+	m_outFrameTexture = outFrameTexture;
 	m_frameAttachment = attachment;
-	if (!m_outFrameBuffer)
+	if (!m_outFrameTexture)
 	{
+		glCheckError();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glCheckError();
 		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
 		return;
 	}
 	else
 	{
-		if (m_frameBuffer == -1)
+		if (m_outFBO == -1)
 		{
-			glGenFramebuffers(1, &m_frameBuffer);
+			glGenFramebuffers(1, &m_outFBO);
 		}
-		auto texture = m_outFrameBuffer->getTexture();
-		glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+		auto texture = m_outFrameTexture->getTexture();
+		glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, m_frameAttachment, GL_TEXTURE_2D, texture, level);
-		setFrameViewport(0, 0, outFrameBuffer->getTexWidth(), outFrameBuffer->getTexHeight());
+		setFrameViewport(0, 0, outFrameTexture->getTexWidth(), outFrameTexture->getTexHeight());
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 }
 
 shared_ptr<CTextureGL> CLayerGL::getInFrameBuffer()
 {
-	return m_inFrameBuffer;
+	return m_inFrameTexture;
 }
 
 shared_ptr<CTextureGL> CLayerGL::getOutFrameBuffer()
 {
-	return m_outFrameBuffer;
+	return m_outFrameTexture;
 }
 
 void CLayerGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, 
@@ -129,11 +134,13 @@ void CLayerGL::draw()
 	{
 		glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
 	}
+	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
 	if (beforeDrawLayer())
 	{
 		drawSceneObjects(m_layerShader.get());
 		drawed = true;
 	}
+	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (m_frameViewport[2] && m_frameViewport[3])
 	{
 		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
@@ -182,7 +189,7 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 	vector<Light>& lights = m_scene.getLights();
 	if (shader) // use layer shader
 	{
-		shader->setUniform3fv(string(VIEWPOS_NAME),glm::value_ptr(m_scene.getCamera().position));
+		shader->setUniform3fv(string(CAMERAPOS_NAME),glm::value_ptr(m_scene.getCamera().position));
 		shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
 		for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 		{
@@ -198,7 +205,7 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 			if (m_usedProgram.find(shader->getProgram()) == m_usedProgram.end())
 			{
 				shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
-				shader->setUniform3fv(string(VIEWPOS_NAME),
+				shader->setUniform3fv(string(CAMERAPOS_NAME),
 					glm::value_ptr(m_scene.getCamera().position));
 				for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 				{
@@ -238,15 +245,30 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 
 /*CLayerShadowGL start*/
 CLayerShadowGL::CLayerShadowGL(CSceneGL& scene, 
-	shared_ptr<CShaderGL> shadowMapShader,shared_ptr<CShaderGL> shadowShader,
+	shared_ptr<CShaderGL> depthMapShader,shared_ptr<CShaderGL> shadowShader,
 	GLint width, GLint height, GLint level): CLayerGL(scene, shadowShader)
 {
-	m_shadowMapShader = shadowMapShader;
-	m_shadowMapTexture = unique_ptr<CTexture2DGL>(new CTexture2DGL(GL_TEXTURE0 + 1));
+	m_depthMapShader = depthMapShader; 
+	m_depthMapWidth = width, m_depthMapHeight = height;
+	
+	// prepare depth texture
+	m_depthMap2D = shared_ptr<CTexture2DGL>(new CTexture2DGL(GL_TEXTURE1));
 	// https://gamedev.stackexchange.com/questions/151865/opengl-es-2-0-shadow-mapping-depth-only-fbo-not-working-due-to-gl-framebuffer
-	m_shadowMapTexture->texImage2D(level, GL_DEPTH_COMPONENT,
-		width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL); // GL_FLOAT error
+	m_depthMap2D->texImage2D(level, GL_DEPTH_COMPONENT, width, height, 
+		0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL); // GL_FLOAT error 
+
+	// prepare depth framebuffer;
+	glGenFramebuffers(1, &m_depthMapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthMap2D->getTexture(), 0);
+	// glDrawBuffer(GL_NONE); // can not work on gles
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glCheckError();
+}
+
+CLayerShadowGL::~CLayerShadowGL()
+{
+	glDeleteFramebuffers(1, &m_depthMapFBO);
 }
 
 void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture)
@@ -268,36 +290,108 @@ void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture)
 	CLayerGL::drawSceneObjects(shader, false, NULL, pfnMeshSetCallback, texture, NULL);
 }
 
+void CLayerShadowGL::setOrthoParams(float* orthoParams)
+{
+	memcpy(m_orthoParams, orthoParams, sizeof(m_orthoParams));
+}
+
+float* CLayerShadowGL::getOrthoParmas()
+{
+	return m_orthoParams;
+}
+
+bool CLayerShadowGL::enableCullFront(bool useCullFront)
+{
+	bool oldUseCullFront = m_useCullFront;
+	m_useCullFront = useCullFront;
+	return oldUseCullFront;
+}
+
+void CLayerShadowGL::setBias(GLfloat biasMin, GLfloat biasMax)
+{
+	m_biasMin = biasMin;
+	m_biasMax = biasMax;
+}
+
 void CLayerShadowGL::draw()
 {
 	CMapList<std::shared_ptr<CObject3DGL>>& m_objects = m_scene.getObjects();
 	bool drawed = false;
-	if (m_frameViewport[2] && m_frameViewport[3])
+	
+	// render on the view of each light
+	for (Light& light : m_scene.getLights())
 	{
-		glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
-	}
-	if (beforeDrawLayer())
-	{
-		for (Light& light : m_scene.getLights())
+		// transfor view to the light, and set uniforms
+		glm::mat4 lightView;
+		glm::mat4 lightProjection;
+		if (fabs(light.position.w) < 0.001f) // direction light
 		{
-			glm::vec3 pos = glm::vec3(light.position);
-			glm::vec3 center = (fabs(light.position.w) < 0.001f || light.cutoff > 0.f) ?
-				pos + glm::vec3(light.direction) : m_scene.getCamera().position;
-			glm::mat4 view;
-			view = glm::lookAt(pos, center, { 0, 1, 0 });
-			m_shadowMapShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(view));
-			drawSceneObjects(m_shadowMapShader.get(), NULL);
+			lightView = glm::lookAt(glm::vec3(light.position), 
+				glm::vec3(light.position) + glm::vec3(light.direction), 
+				{ 0.f, 1.f, 0.f });
+			lightProjection = glm::ortho(m_orthoParams[0], m_orthoParams[1], 
+				m_orthoParams[2], m_orthoParams[3],
+				m_orthoParams[4], m_orthoParams[5]);
+			m_layerShader->setUniformMat4fv(string(LIGHTMATRIX_NAME), glm::value_ptr(lightProjection * lightView));
 		}
-		drawSceneObjects(m_layerShader.get(),static_cast<CTexture2DGL*>(m_shadowMapTexture.get()));
-		//auto texture = m_scene.getTextures()["misuzu"].get();
-		//drawSceneObjects(m_layerShader.get(), static_cast<CTexture2DGL*>(texture));
-		drawed = true;
+		else
+		{
+			continue;
+			if (light.cutoff > 0.f) // spot light
+			{
+				lightView = glm::lookAt(glm::vec3(light.position),
+					glm::vec3(light.position) + glm::vec3(light.direction), { 0.f, 1.f, 0.f });
+				lightProjection = m_scene.getProjection();
+			}
+			else // point light 
+			{
+				lightView = m_scene.getView();
+				lightProjection = m_scene.getProjection();
+			}
+		}
+		m_depthMapShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(lightView));
+		m_depthMapShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(lightProjection));
+		m_depthMapShader->setUniform4fv(STCFIELDSTRING(LIGHT_NAME, POSITION_NAME), glm::value_ptr(light.position));
+		m_depthMapShader->setUniform1f(STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME), light.cutoff);
+		m_layerShader->setUniform4fv(STCFIELDSTRING(LIGHT_NAME, POSITION_NAME), glm::value_ptr(light.position));
+		m_layerShader->setUniform1f(STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME), light.cutoff);
+		m_layerShader->setUniform1f(string(BIASMIN_NAME), m_biasMin);
+		m_layerShader->setUniform1f(string(BIASMAX_NAME), m_biasMax);
+
+		// render shadowmap
+		glBindFramebuffer(GL_FRAMEBUFFER, m_depthMapFBO);
+		glViewport(0, 0, m_depthMapWidth, m_depthMapHeight);
+		glClear(GL_DEPTH_BUFFER_BIT); // this is very important, must clear before use!!!
+		if(m_useCullFront) glCullFace(GL_FRONT);
+		drawSceneObjects(m_depthMapShader.get(), NULL);
+		if(m_useCullFront) glCullFace(GL_BACK);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+
+		// blend the shadow 
+		if (m_frameViewport[2] && m_frameViewport[3])
+		{
+			glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
+		}
+		else
+		{
+			glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
+		}
+		if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		m_layerShader->setUnifrom1i(string(SHADOWMAP2D_NAME), m_depthMap2D->getActiveIndex() - GL_TEXTURE0);
+		if (beforeDrawLayer())
+		{						
+			drawSceneObjects(m_layerShader.get(), static_cast<CTexture2DGL*>(m_depthMap2D.get()));
+			m_depthMap2D->unbind();
+			drawed = true;
+		}
+		if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if (m_frameViewport[2] && m_frameViewport[3])
+		{
+			glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
+		}
+		afterDrawLayer(drawed);
 	}
-	if (m_frameViewport[2] && m_frameViewport[3])
-	{
-		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
-	}
-	afterDrawLayer(drawed);
 }
 /*CLayerShadowGL end*/
 
@@ -385,7 +479,9 @@ CLayerLightGL::CLayerLightGL(CSceneGL& scene, shared_ptr<CShaderGL> lightShader,
 	{
 		if (fabs(lights[i].position.w) <= 0.001f)
 		{
-			m_lightCubes->pushMesh(nullptr);
+			auto mesh = shared_ptr<CMeshGL>(new CCubeMeshGL(m_scale, nullptr, GL_STATIC_DRAW));
+			m_lightCubes->pushMesh(mesh);
+			//m_lightCubes->pushMesh(nullptr);
 		}
 		else
 		{

@@ -107,7 +107,7 @@ public:
 	void setProject(const glm::mat4& project);
 	void setProject(const glm::mat4& project, string shaderName, bool updateMatrix = true);
 	void setProject(string shaderName = "");
-	glm::mat4& getProject();
+	glm::mat4& getProjection();
 	void setCamera(const Camera& camera, bool updateMatrix = true);
 	void setCamera(const Camera& camera, string shaderName,
 		bool updateMatrix = true, bool updateCamera = true);

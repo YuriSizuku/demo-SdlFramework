@@ -69,7 +69,7 @@ public:
         auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
         auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         this->pushLayer(layer);
-        //this->pushLayer(layer_normal);
+       // this->pushLayer(layer_normal);
         this->pushLayer(layer_attitude);
         this->pushLayer(layer_light); 
     }

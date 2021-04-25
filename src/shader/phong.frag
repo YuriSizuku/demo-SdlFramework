@@ -4,7 +4,7 @@ in VS_OUT{
     vec2 aTexcoord;
     vec3 aNormal;
     vec3 aTangent;
-    vec4 fragPos; // world pos
+    vec4 worldPosition;
     mat3 worldTBN;
 } fs_in;
 
@@ -12,11 +12,10 @@ layout (std140) uniform BLOCK1{
     float other;
 };
 uniform sampler2D defaultTexture;
-uniform vec3 viewPos;
+uniform vec3 cameraPosition;
 #define MAX_LIGHTS 20
 uniform int lightsNum;
-uniform struct Light
-{
+uniform struct Light{
     vec4 position;
     vec3 direction;
     vec3 ambient;
@@ -25,8 +24,7 @@ uniform struct Light
     vec3 attenuation;
     float cutoff, outerCutoff;
 }lights[MAX_LIGHTS];
-uniform struct MaterialPhong 
-{
+uniform struct MaterialPhong {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -51,16 +49,16 @@ vec3 CalcDirectionLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDire
     return (ambient + diffuse + specular);
 }
 
-vec3 CalcPointLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection, vec3 fragPos)
+vec3 CalcPointLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection, vec3 worldPosition)
 {
     // Half-Lambert diffuse shading
-    vec3 lightDirection = normalize(fragPos - light.position.xyz);
+    vec3 lightDirection = normalize(worldPosition - light.position.xyz);
     float diff = max(dot(normal, -lightDirection), 0);
     // specular Blinn-Phong shading
     vec3 halfDirection = -normalize(lightDirection+viewDirection);
     float spec = pow(max(dot(normal, halfDirection), 0.f), m.shininess); 
     // attenuation
-    float distance = length(light.position.xyz - fragPos);
+    float distance = length(light.position.xyz - worldPosition);
     float attenuation = 1.f/(light.attenuation[0] + 
         light.attenuation[1]*distance + light.attenuation[1]*distance*distance);
     // combine shading
@@ -70,16 +68,16 @@ vec3 CalcPointLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirectio
     return (ambient + diffuse + specular)*attenuation;
 }
 
-vec3 CalcSpotLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection, vec3 fragPos)
+vec3 CalcSpotLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection, vec3 worldPosition)
 {
     // Half-Lambert diffuse shading
-    vec3 lightDirection = normalize(fragPos - light.position.xyz);
+    vec3 lightDirection = normalize(worldPosition - light.position.xyz);
     float diff = max(dot(normal, -lightDirection), 0);
     // specular Blinn-Phong shading
     vec3 halfDirection = -normalize(lightDirection+viewDirection);
     float spec = pow(max(dot(normal, halfDirection), 0.f), m.shininess);
     // attenuation
-    float distance = length(light.position.xyz - fragPos);
+    float distance = length(light.position.xyz - worldPosition);
     float attenuation = 1.f/(light.attenuation[0] + 
         light.attenuation[1]*distance + light.attenuation[1]*distance*distance);
     // spot intensity, I = 1 - (theta-outerCutoff)/(outerCutoff-cutoff)
@@ -98,7 +96,7 @@ void main()
     vec3 texcolor = texture(defaultTexture, fs_in.aTexcoord).rgb; 
     vec3 outcolor = vec3(0.f);
     vec3 normal = fs_in.worldTBN[2];
-    vec3 viewDirection = normalize(fs_in.fragPos.xyz - viewPos);
+    vec3 viewDirection = normalize(fs_in.worldPosition.xyz - cameraPosition);
     MaterialPhong m = material;
     m.ambient *= texcolor;
     m.diffuse *= texcolor;
@@ -110,11 +108,11 @@ void main()
         }
         else if(lights[i].cutoff>0.f) 
         {
-            outcolor += CalcSpotLight(lights[i], m, normal, viewDirection, fs_in.fragPos.xyz);
+            outcolor += CalcSpotLight(lights[i], m, normal, viewDirection, fs_in.worldPosition.xyz);
         }
         else
         {
-            outcolor += CalcPointLight(lights[i], m, normal, viewDirection, fs_in.fragPos.xyz);
+            outcolor += CalcPointLight(lights[i], m, normal, viewDirection, fs_in.worldPosition.xyz);
         }
     }
     FragColor = vec4(outcolor, material.alpha);

@@ -145,7 +145,7 @@ void CSceneGL::setProject(string shaderName)
 	setProject(m_project, shaderName, false);
 }
 
-glm::mat4& CSceneGL::getProject()
+glm::mat4& CSceneGL::getProjection()
 {
 	return m_project;
 }
@@ -283,7 +283,7 @@ void CSceneGL::render()
 	for (auto layer : m_layers)
 	{
 		if (layer == nullptr) continue;
-		layer->setInFrameBuffer(inFrameBuffer);
+		layer->setInFrameTexture(inFrameBuffer);
 		layer->draw();
 		inFrameBuffer = layer->getOutFrameBuffer();
 	}
