@@ -58,7 +58,7 @@ void CLayerGL::setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture)
 }
 
 void CLayerGL::setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture, 
-	GLenum attachment, GLint level)
+	GLenum attachment, GLint level, bool genDepthTexture)
 {
 	m_outFrameTexture = outFrameTexture;
 	m_frameAttachment = attachment;
@@ -76,10 +76,22 @@ void CLayerGL::setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture,
 		{
 			glGenFramebuffers(1, &m_outFBO);
 		}
-		auto texture = m_outFrameTexture->getTexture();
+		int viewWidth = outFrameTexture->getTexWidth();
+		int viewHeight = outFrameTexture->getTexHeight();
 		glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, m_frameAttachment, GL_TEXTURE_2D, texture, level);
-		setFrameViewport(0, 0, outFrameTexture->getTexWidth(), outFrameTexture->getTexHeight());
+		glFramebufferTexture2D(GL_FRAMEBUFFER, m_frameAttachment, GL_TEXTURE_2D, 
+			m_outFrameTexture->getTexture(), level);
+
+		// append depth buffer
+		if (genDepthTexture)
+		{
+			auto outFrameDepthTexture = shared_ptr<CTexture2DGL>(new CTexture2DGL());
+			outFrameDepthTexture->texImage2D(0, GL_DEPTH_COMPONENT,
+				viewWidth, viewHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, outFrameDepthTexture->getTexture(), 0);
+			m_outFrameDepthTexture = outFrameDepthTexture;
+		}
+		setFrameViewport(0, 0, viewWidth, viewHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 }
@@ -134,13 +146,20 @@ void CLayerGL::draw()
 	{
 		glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
 	}
-	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+	if (m_outFBO != -1)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+		glClear(GL_COLOR_BUFFER_BIT  | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear output buffer before use
+	}
 	if (beforeDrawLayer())
 	{
 		drawSceneObjects(m_layerShader.get());
 		drawed = true;
 	}
-	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if (m_outFBO != -1)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 	if (m_frameViewport[2] && m_frameViewport[3])
 	{
 		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
@@ -251,11 +270,13 @@ CLayerShadowGL::CLayerShadowGL(CSceneGL& scene,
 	m_depthMapShader = depthMapShader; 
 	m_depthMapWidth = width, m_depthMapHeight = height;
 	
-	// prepare depth texture
+	// prepare  depth texture
 	m_depthMap2D = shared_ptr<CTexture2DGL>(new CTexture2DGL(GL_TEXTURE1));
 	// https://gamedev.stackexchange.com/questions/151865/opengl-es-2-0-shadow-mapping-depth-only-fbo-not-working-due-to-gl-framebuffer
 	m_depthMap2D->texImage2D(level, GL_DEPTH_COMPONENT, width, height, 
 		0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL); // GL_FLOAT error 
+
+	// prepare depth cube texture
 
 	// prepare depth framebuffer;
 	glGenFramebuffers(1, &m_depthMapFBO);
@@ -271,7 +292,8 @@ CLayerShadowGL::~CLayerShadowGL()
 	glDeleteFramebuffers(1, &m_depthMapFBO);
 }
 
-void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture)
+void CLayerShadowGL::drawSceneObjects(CShaderGL* shader,
+	CTextureGL* shadowMap, CTextureGL* renderTexture)
 {
 	PFNCMESHGLCB pfnMeshSetCallback = [](int shaderindex, CMeshGL* mesh, CSceneGL* scene, void* data1, void* data2)->void
 	{
@@ -280,14 +302,27 @@ void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture)
 			cerr << "ERROR  CLayerShadowGL::drawSceneObject pfnMeshSetCallback mesh is NULL" << endl;
 			return;
 		}
-		auto texture = static_cast<CTexture2DGL*>(data1);
-		if (texture)
+		auto shadowMap = static_cast<CTextureGL*>(data1);
+		auto renderTexture = static_cast<CTextureGL*>(data2);
+		if (shadowMap)
 		{
-			texture->active();
-			texture->bind();
+			shadowMap->active();
+			shadowMap->bind();
+		}
+		if (renderTexture)
+		{
+			renderTexture->active();
+			renderTexture->bind();
 		}
 	};
-	CLayerGL::drawSceneObjects(shader, false, NULL, pfnMeshSetCallback, texture, NULL);
+	CLayerGL::drawSceneObjects(shader, false, NULL, pfnMeshSetCallback, renderTexture, shadowMap);
+}
+
+void  CLayerShadowGL::setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture)
+{
+	CLayerGL::setInFrameTexture(inFrameTexture);
+	m_inFrameTexture->active(GL_TEXTURE0);
+	m_layerShader->setUnifrom1i(string(RENDERTEX_NAME), m_inFrameTexture->getActiveIndex() - GL_TEXTURE0);
 }
 
 void CLayerShadowGL::setOrthoParams(float* orthoParams)
@@ -333,6 +368,7 @@ void CLayerShadowGL::draw()
 				m_orthoParams[2], m_orthoParams[3],
 				m_orthoParams[4], m_orthoParams[5]);
 			m_layerShader->setUniformMat4fv(string(LIGHTMATRIX_NAME), glm::value_ptr(lightProjection * lightView));
+			m_layerShader->setUnifrom1i(string(SHADOWMAP2D_NAME), m_depthMap2D->getActiveIndex() - GL_TEXTURE0);
 		}
 		else
 		{
@@ -363,7 +399,7 @@ void CLayerShadowGL::draw()
 		glViewport(0, 0, m_depthMapWidth, m_depthMapHeight);
 		glClear(GL_DEPTH_BUFFER_BIT); // this is very important, must clear before use!!!
 		if(m_useCullFront) glCullFace(GL_FRONT);
-		drawSceneObjects(m_depthMapShader.get(), NULL);
+		drawSceneObjects(m_depthMapShader.get(), NULL, NULL);
 		if(m_useCullFront) glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); 
 
@@ -376,16 +412,24 @@ void CLayerShadowGL::draw()
 		{
 			glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
 		}
-		if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+		if (m_outFBO != -1)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear output buffer before use
+		}
 		glClear(GL_DEPTH_BUFFER_BIT);
-		m_layerShader->setUnifrom1i(string(SHADOWMAP2D_NAME), m_depthMap2D->getActiveIndex() - GL_TEXTURE0);
 		if (beforeDrawLayer())
 		{						
-			drawSceneObjects(m_layerShader.get(), static_cast<CTexture2DGL*>(m_depthMap2D.get()));
+			drawSceneObjects(m_layerShader.get(), 
+				m_depthMap2D.get(), m_inFrameTexture.get());
+			m_inFrameTexture->unbind();
 			m_depthMap2D->unbind();
 			drawed = true;
 		}
-		if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if (m_outFBO != -1)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 		if (m_frameViewport[2] && m_frameViewport[3])
 		{
 			glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
@@ -394,6 +438,60 @@ void CLayerShadowGL::draw()
 	}
 }
 /*CLayerShadowGL end*/
+
+/*CLayerViewTextureGL start*/
+CLayerDrawTextureGL::CLayerDrawTextureGL(CSceneGL& scene, 
+	shared_ptr<CShaderGL> textureShader, shared_ptr<CTextureGL> texture)
+	: CLayerGL(scene, textureShader),m_viewTexture(texture)
+{
+	map<int, glm::vec2> texcoords;
+	texcoords[0] = {1.f, 1.f};
+	texcoords[1] = { 0.f, 1.f };
+	texcoords[2] = { 0.f, 0.f };
+	texcoords[3] = { 1.f, 0.f };
+	m_viewMesh = unique_ptr<CMeshGL>(new CPlaneMeshGL(
+		glm::scale(glm::mat4(1), { 2.f, 2.f, 2.f }),  
+		nullptr, GL_STATIC_DRAW, texcoords));
+}
+
+void CLayerDrawTextureGL::setViewTexture(shared_ptr<CTextureGL> texture)
+{
+	m_viewTexture = texture;
+}
+
+shared_ptr<CTextureGL> CLayerDrawTextureGL::getViewTexture()
+{
+	return m_viewTexture;
+}
+
+void CLayerDrawTextureGL::draw()
+{
+	bool drawed = false;
+	if (m_frameViewport[2] && m_frameViewport[3])
+	{
+		glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
+	}
+	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+	
+	glm::mat4 identity = glm::mat4(1);
+	m_layerShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(identity));
+	m_layerShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(identity));
+	m_viewTexture->active(GL_TEXTURE0);
+	m_viewTexture->bind();
+	if (beforeDrawLayer())
+	{
+		m_viewMesh->draw(identity, 0, m_layerShader.get());
+		drawed = true;
+	}
+	m_viewTexture->unbind();
+	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if (m_frameViewport[2] && m_frameViewport[3])
+	{
+		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
+	}
+	afterDrawLayer(drawed);
+}
+/*CLayerViewTextureGL end*/
 
 /*CLayerHudGL start*/
 CLayerHudGL::CLayerHudGL(CSceneGL& scene,

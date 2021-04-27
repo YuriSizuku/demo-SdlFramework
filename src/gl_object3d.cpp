@@ -315,7 +315,7 @@ void CObject3DGL::draw(int shaderIndex, CShaderGL* shader, bool useTextures,
 /*CObject3DGL end*/
 
 /*CPlaneMeshGL start*/
-CPlaneMeshGL::CPlaneMeshGL( const glm::mat4& model,  
+CPlaneMeshGL::CPlaneMeshGL(const glm::mat4& model,  
 	const shared_ptr<CShaderGL> shader,
 	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
 {

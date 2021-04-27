@@ -3,6 +3,7 @@ in VS_OUT{
     vec2 aTexcoord;
     vec4 worldPosition;
     vec3 worldNormal;
+    vec2 ndcCoord;
 }fs_in;
 
 uniform sampler2D rednerTexture;
@@ -49,5 +50,5 @@ void main()
         shadowMapCoord = vec3(fs_in.worldPosition - light.position);
         texture(shadowMapCube, shadowMapCoord);
     }
-    FragColor = vec4(vec3(1-shadow), 1.f);
+    FragColor = vec4(vec3(1-shadow), 1.f) * texture(rednerTexture, fs_in.ndcCoord.xy*0.5f + 0.5f);
 }

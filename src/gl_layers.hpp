@@ -49,6 +49,7 @@ typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, vo
 // for shadow
 #define LIGHTMATRIX_NAME "lightMatrix"
 #define LIGHTMATRIXS_NAME "lightMatrixs"
+#define RENDERTEX_NAME "renderTexture"
 #define SHADOWMAP2D_NAME "shadowMap2D"
 #define SHADOWMAPCUBE_NAME "shadowMapCube"
 #define BIASMIN_NAME "biasMin"
@@ -61,7 +62,8 @@ protected:
 	CSceneGL& m_scene;
 	size_t m_layerIndex;
 	shared_ptr<CShaderGL> m_layerShader;
-	shared_ptr<CTextureGL> m_inFrameTexture, m_outFrameTexture; // in Frame is the from last
+	// in Frame is from last layer
+	shared_ptr<CTextureGL> m_inFrameTexture, m_outFrameTexture, m_outFrameDepthTexture; 
 	GLint m_scrViewport[4];
 	GLint m_frameViewport[4];
 	GLuint m_outFBO = -1;
@@ -88,7 +90,8 @@ public:
 	GLenum getFrameAttachment();
 	void setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture);
 	void setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture, 
-		GLenum attachment= GL_COLOR_ATTACHMENT0, GLint level=0);
+		GLenum attachment= GL_COLOR_ATTACHMENT0, GLint level=0, 
+		bool genDepthTexture=true);
 	shared_ptr<CTextureGL> getInFrameBuffer();
 	shared_ptr<CTextureGL> getOutFrameBuffer();
 	virtual ~CLayerGL();
@@ -128,11 +131,13 @@ private:
 	GLfloat m_biasMin = 0.f, m_biasMax = 0.f; // bias for Shadow Acne problem
 
 protected: 
-	void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, CTexture2DGL* texture);
+	void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, 
+		CTextureGL* shadowMap, CTextureGL* renderTexture);
 public:
 	CLayerShadowGL(CSceneGL& scene,  shared_ptr<CShaderGL> depthMapShader, 
 					  shared_ptr<CShaderGL> shadowShader, 
 	                  GLint width=1024, GLint height=1024, GLint level=0);
+	virtual void setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture);
 	void setOrthoParams(float *orthoParams);
 	float* getOrthoParmas();
 	bool enableCullFront(bool useCullFront);
@@ -146,17 +151,38 @@ public:
 class CLayerEnviromentGL : public CLayerGL
 {
 private:
-	shared_ptr<CTextureCubeGL> m_enviromentMapTexture;
+	shared_ptr<CTextureCubeGL> m_enviromentMap = nullptr;
+	vector<shared_ptr<CLayerGL>> m_renderLayers;
+	int m_enviromentMapWidth, m_enviromentMapHeight;
 
 public:
-	CLayerEnviromentGL(CSceneGL& scene, shared_ptr<CTextureCubeGL> m_enviromentMapTexture);
+	CLayerEnviromentGL(CSceneGL& scene, shared_ptr<CShaderGL> enviromentMapShader,
+		GLint width = 1024, GLint height = 1024, GLint level = 0);
+	void setEnvriomentMap(shared_ptr<CTextureCubeGL> m_enviromentMap);
+	shared_ptr<CTextureCubeGL> getEnvriomentMap();
+	void pushRenderLayer(shared_ptr<CLayerGL> layer);
+	vector<shared_ptr<CLayerGL>>& getRenderLayers();
+	virtual void draw();
+};
+
+// use this layer to view the texture on the screen
+class CLayerDrawTextureGL : public CLayerGL
+{
+private:
+	unique_ptr<CMeshGL> m_viewMesh;
+	shared_ptr<CTextureGL> m_viewTexture;
+	
+public:
+	CLayerDrawTextureGL(CSceneGL& scene, shared_ptr<CShaderGL> textureShader, 
+		shared_ptr<CTextureGL> texture = nullptr);
+	void setViewTexture(shared_ptr<CTextureGL> texture);
+	shared_ptr<CTextureGL> getViewTexture();
 	virtual void draw();
 };
 
 // show the small window for debug information as HUD
 class CLayerHudGL : public CLayerGL
 {
-
 public:
 	CLayerHudGL(CSceneGL& scene,
 		shared_ptr<CShaderGL> hudShader, GLint hudViewPort[4] = NULL);

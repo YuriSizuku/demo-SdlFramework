@@ -14,10 +14,13 @@ const char SHADER_DIR[] = "./assets";
 
 class CSimpleScene : public CSceneGL
 {
+private:
+    shared_ptr<CTexture2DGL> m_outTexture;
 public:
     CSimpleScene() : CSceneGL(SHADER_DEFAULT, SHADER_DIR)
     {
         initShaders();
+        initTextures();
         initLights();
         initLayers();
         initObjects();
@@ -28,8 +31,25 @@ public:
     {
         addShader("debug_attitude");
         addShader("debug_light");
+        addShader("depthmap");
         addShader("shadow"); 
-        addShader("depthmap");  
+        addShader("draw_texture");
+    }
+
+    void initTextures()
+    {
+        // load images 
+        int w, h, c;
+        //stbi_set_flip_vertically_on_load(1);
+        auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);
+        auto tex = shared_ptr<CTexture2DGL>(new CTexture2DGL(w, h));
+        tex->texImage2D(imgdata);
+        m_textures["misuzu"] = tex;
+        delete[] imgdata;
+
+        // init output texture buffer
+        m_outTexture = shared_ptr<CTexture2DGL>(new CTexture2DGL(1280, 720));
+        m_outTexture->texImage2D(NULL);
     }
 
     void initLights()
@@ -65,32 +85,33 @@ public:
 
     void initLayers()
     {
+        // phong rendering 
         auto layer_phong = shared_ptr<CLayerPhongGL>(new CLayerPhongGL(*this));
+        layer_phong->setOutFrameTexture(m_outTexture, GL_COLOR_ATTACHMENT0);
+        
+        // shadow rendering
         auto layer_shadow = shared_ptr<CLayerShadowGL>(new CLayerShadowGL(*this, getShaders()["depthmap"], getShaders()["shadow"], 1024, 1024));
-        auto layer_attitude = shared_ptr<CLayerHudAttitude>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
-        auto layer_light = shared_ptr<CLayerLightGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
-           
         float orthoParams[6] = { -2.f, 2.f, -2.f, 2.f, 0.1f, 5.f };
         layer_shadow->setOrthoParams(orthoParams);
         layer_shadow->enableCullFront(false);
         layer_shadow->setBias(0.005f, 0.05f);
+        
+        // other component
+        auto layer_attitude = shared_ptr<CLayerHudAttitude>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
+        auto layer_light = shared_ptr<CLayerLightGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
+        auto layer_texture = shared_ptr<CLayerDrawTextureGL>(new CLayerDrawTextureGL(*this, getShaders()["draw_texture"], m_outTexture));
+           
+        // assemble layers
         this->pushLayer(layer_phong); 
-        this->pushLayer(layer_shadow);
+        //this->pushLayer(layer_shadow);
         this->pushLayer(layer_attitude); 
         this->pushLayer(layer_light);  
+        this->pushLayer(layer_texture);
     }
 
     void initObjects()
     {
-        // load images 
-        int w, h, c;
-        //stbi_set_flip_vertically_on_load(1);
-        auto imgdata = stbi_load("./assets/misuzu.png", &w, &h, &c, 0);
-        auto tex = shared_ptr<CTexture2DGL>(new CTexture2DGL(w, h));
-        tex->texImage2D(imgdata);
-        m_textures["misuzu"] = tex;
-        delete[] imgdata;
-        
+        auto tex = m_textures["misuzu"];   
         // prepare material
         auto _material = new MaterialPhong;
         _material->ambient = { 0.2f, 0.2f, 0.2f };

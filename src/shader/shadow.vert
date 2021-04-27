@@ -7,6 +7,7 @@ out VS_OUT{
     vec2 aTexcoord;
     vec4 worldPosition;
     vec3 worldNormal;
+    vec2 ndcCoord;
 }vs_out;
 
 uniform mat4 model, view, projection;
@@ -17,4 +18,5 @@ void main()
     vs_out.worldNormal = vec3(transpose(inverse(model)) * vec4(aNormal, 1.f));
     vs_out.worldPosition = model * vec4(aPosition, 1.f);
     gl_Position = projection * view * vs_out.worldPosition;
+    vs_out.ndcCoord = gl_Position.xy / gl_Position.w; 
 }
