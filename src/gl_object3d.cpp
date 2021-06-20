@@ -44,6 +44,12 @@ GLuint CMeshGL::getVAO()
 	return m_vao;
 }
 
+void CMeshGL::fillVAO()
+{
+	auto countIndexes = vector<GLint>({ 3,2,3,3 });
+	fillVAO(countIndexes);
+}
+
 void CMeshGL::fillVAO(vector<GLint>& countIndexs)
 {
 	if (m_vbo == -1)
@@ -189,6 +195,7 @@ void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, b
 	bool drawed = false;
 	auto currentShader = shader;
 	glBindVertexArray(m_vao);
+	string str;
 	if (currentShader == nullptr)
 	{
 		if (m_shaders.find(shaderIndex) != m_shaders.end())
@@ -201,7 +208,8 @@ void CMeshGL::draw(glm::mat4& objectModel, int shaderIndex, CShaderGL* shader, b
 		}
 	}
 	// update the model martrix every time, because the shader can be shared
-	currentShader->setUniformMat4fv(string(MODEL_MATRIX_NAME), glm::value_ptr(objectModel*m_model));
+	str = string(MODEL_MATRIX_NAME);
+	currentShader->setUniformMat4fv(str, glm::value_ptr(objectModel*m_model));
 	currentShader->use();
 	if (useTextures)
 	{
@@ -317,7 +325,7 @@ void CObject3DGL::draw(int shaderIndex, CShaderGL* shader, bool useTextures,
 /*CPlaneMeshGL start*/
 CPlaneMeshGL::CPlaneMeshGL(const glm::mat4& model,  
 	const shared_ptr<CShaderGL> shader,
-	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
+	GLenum usage, map<int, glm::vec2> texcoords):CMeshGL(model, shader)
 {
 	GLfloat vbo_buf[]= { // vec3 position, vec2 texcoord, vec3 normal, vec3 tangent
 		 0.5f,  0.5f, 0, 1.f, 0,   0, 0, 1.f, 1.f, 0, 0,
@@ -339,8 +347,13 @@ CPlaneMeshGL::CPlaneMeshGL(const glm::mat4& model,
 	auto t1 = glm::make_vec2(&vbo_buf[INDEX_COUNT + TEXCOORD_INDEX]);
 	auto p2 = glm::make_vec3(&vbo_buf[INDEX_COUNT *2]);
 	auto t2 = glm::make_vec2(&vbo_buf[INDEX_COUNT *2+ TEXCOORD_INDEX]);
-	auto tangent = ::CalcTangent(p1 - p0, p2 - p1, t1 - t0, t2 - t1);
-	auto normal = ::CalcNormal(p1 - p0, p2 - p1);
+	auto delta_p0 = p1 - p0;
+	auto delta_p1 = p2 - p1;
+	auto delta_t0 = t1 - t0;
+	auto delta_t1 = t2 - t1;
+	auto tangent = ::CalcTangent(delta_p0, delta_p1, delta_t0, 
+		delta_t1);
+	auto normal = ::CalcNormal(delta_p0, delta_p1);
 	for (int i = 0; i < 4; i++)
 	{
 		memcpy((GLfloat*)vbo_buf + INDEX_COUNT * i + NORMAL_INDEX,
@@ -358,7 +371,7 @@ CPlaneMeshGL::CPlaneMeshGL(const glm::mat4& model,
 /*CCubeMeshGL start*/
 CCubeMeshGL::CCubeMeshGL(const glm::mat4& model,
 	const shared_ptr<CShaderGL> shader,
-	GLenum usage, map<int, glm::vec2>& texcoords):CMeshGL(model, shader)
+	GLenum usage, map<int, glm::vec2> texcoords):CMeshGL(model, shader)
 {
 	GLfloat vbo_buf[INDEX_COUNT * 36];
 	GLint face_ebo_buf[] = { 0,1,2,2,3,0 };

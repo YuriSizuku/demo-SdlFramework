@@ -62,9 +62,9 @@ void CLayerGL::setOutFrameTexture(shared_ptr<CTextureGL> outFrameTexture,
 {
 	m_outFrameTexture = outFrameTexture;
 	m_frameAttachment = attachment;
-	if (!m_outFrameTexture)
+	if (!m_outFrameTexture) 
 	{
-		glCheckError();
+		glCheckError(); 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glCheckError();
 		glViewport(m_scrViewport[0], m_scrViewport[1], m_scrViewport[2], m_scrViewport[3]);
@@ -177,22 +177,23 @@ CLayerPhongGL::CLayerPhongGL(CSceneGL& scene, shared_ptr<CShaderGL> layerShader,
 
 void CLayerPhongGL::setLightUniform(Light* light, CShaderGL* shader, GLsizei i)
 {
-	shader->setUniform4fv(STCIFIELDSTRING(LIGHTS_NAME, i, POSITION_NAME),
-		glm::value_ptr(light->position));
-	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, DIRECTION_NAME),
-		glm::value_ptr(light->direction));
-	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, AMBIENT_NAME),
-		glm::value_ptr(light->ambient));
-	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, DIFFUSE_NAME),
-		glm::value_ptr(light->diffuse));
-	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, SPECULAR_NAME),
-		glm::value_ptr(light->specular));
-	shader->setUniform3fv(STCIFIELDSTRING(LIGHTS_NAME, i, ATTENUATION_NAME),
-		glm::value_ptr(light->attenuation));
-	shader->setUniform1f(STCIFIELDSTRING(LIGHTS_NAME, i, CUTOFF_NAME),
-		light->cutoff);
-	shader->setUniform1f(STCIFIELDSTRING(LIGHTS_NAME, i, OUTERCUTOFF_NAME),
-		light->outerCutoff);
+	string str;
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, POSITION_NAME);
+	shader->setUniform4fv(str, glm::value_ptr(light->position));
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, DIRECTION_NAME);
+	shader->setUniform3fv(str, glm::value_ptr(light->direction));
+	str = (STCIFIELDSTRING(LIGHTS_NAME, i, AMBIENT_NAME));
+	shader->setUniform3fv(str, glm::value_ptr(light->ambient));
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, DIFFUSE_NAME);
+	shader->setUniform3fv(str, glm::value_ptr(light->diffuse));
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, SPECULAR_NAME);
+	shader->setUniform3fv(str, glm::value_ptr(light->specular));
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, ATTENUATION_NAME);
+	shader->setUniform3fv(str, glm::value_ptr(light->attenuation));
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, CUTOFF_NAME);
+	shader->setUniform1f(str, light->cutoff);
+	str = STCIFIELDSTRING(LIGHTS_NAME, i, OUTERCUTOFF_NAME);
+	shader->setUniform1f(str, light->outerCutoff);
 }
 
 bool CLayerPhongGL::beforeDrawLayer()
@@ -206,10 +207,14 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 	PFNCMESHGLCB pfnMeshSetCallback, void* data1, void* data2)
 {
 	vector<Light>& lights = m_scene.getLights();
+	string str;
+
 	if (shader) // use layer shader
 	{
-		shader->setUniform3fv(string(CAMERAPOS_NAME),glm::value_ptr(m_scene.getCamera().position));
-		shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
+		str = string(CAMERAPOS_NAME);
+		shader->setUniform3fv(str,glm::value_ptr(m_scene.getCamera().position));
+		str = string(LIGHT_NUM_NAME);
+		shader->setUnifrom1i(str, lights.size());
 		for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 		{
 			setLightUniform(&lights[i], shader, i);
@@ -223,9 +228,10 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 			shader = mesh->getShaders()[m_layerIndex].get();
 			if (m_usedProgram.find(shader->getProgram()) == m_usedProgram.end())
 			{
-				shader->setUnifrom1i(string(LIGHT_NUM_NAME), lights.size());
-				shader->setUniform3fv(string(CAMERAPOS_NAME),
-					glm::value_ptr(m_scene.getCamera().position));
+				str = string(LIGHT_NUM_NAME);
+				shader->setUnifrom1i(str, lights.size());
+				str = string(CAMERAPOS_NAME);
+				shader->setUniform3fv(str, glm::value_ptr(m_scene.getCamera().position));
 				for (GLsizei i = 0; i < static_cast<GLsizei>(lights.size()); i++)
 				{
 					setLightUniform(&lights[i], shader, i);
@@ -245,18 +251,19 @@ void CLayerPhongGL::drawSceneObject(CObject3DGL* object, CShaderGL* shader, bool
 		}
 		if (!mesh->getMaterial()) return;
 
+		string str;
 		auto shader = mesh->getShaders()[shaderindex];
 		MaterialPhong* material = static_cast<MaterialPhong*>(mesh->getMaterial().get());
-		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, AMBIENT_NAME),
-			glm::value_ptr(material->ambient));
-		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, DIFFUSE_NAME),
-			glm::value_ptr(material->diffuse));
-		shader->setUniform3fv(STCFIELDSTRING(MATERIAL_NAME, SPECULAR_NAME),
-			glm::value_ptr(material->specular));
-		shader->setUniform1f(STCFIELDSTRING(MATERIAL_NAME, SHININESS_NAME),
-			material->shininess);
-		shader->setUniform1f(STCFIELDSTRING(MATERIAL_NAME, ALPHA_NAME),
-			material->alpha);
+		str = STCFIELDSTRING(MATERIAL_NAME, AMBIENT_NAME);
+		shader->setUniform3fv(str, glm::value_ptr(material->ambient));
+		str = STCFIELDSTRING(MATERIAL_NAME, DIFFUSE_NAME);
+		shader->setUniform3fv(str, glm::value_ptr(material->diffuse));
+		str = STCFIELDSTRING(MATERIAL_NAME, SPECULAR_NAME);
+		shader->setUniform3fv(str, glm::value_ptr(material->specular));
+		str = STCFIELDSTRING(MATERIAL_NAME, SHININESS_NAME);
+		shader->setUniform1f(str, material->shininess);
+		str = STCFIELDSTRING(MATERIAL_NAME, ALPHA_NAME);
+		shader->setUniform1f(str, material->alpha);
 	};
 	object->draw(m_layerIndex, shader, true, NULL, pfnMeshSetCallback, &m_scene);
 }
@@ -269,6 +276,8 @@ CLayerShadowGL::CLayerShadowGL(CSceneGL& scene,
 {
 	m_depthMapShader = depthMapShader; 
 	m_depthMapWidth = width, m_depthMapHeight = height;
+	setShadowBias(m_biasMin, m_biasMax);
+	setShadowBrightness(m_shadowBrightness);
 	
 	// prepare  depth texture
 	m_depthMap2D = shared_ptr<CTexture2DGL>(new CTexture2DGL(GL_TEXTURE1));
@@ -276,7 +285,7 @@ CLayerShadowGL::CLayerShadowGL(CSceneGL& scene,
 	m_depthMap2D->texImage2D(level, GL_DEPTH_COMPONENT, width, height, 
 		0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL); // GL_FLOAT error 
 
-	// prepare depth cube texture
+	// prepare depth cube texture 
 
 	// prepare depth framebuffer;
 	glGenFramebuffers(1, &m_depthMapFBO);
@@ -320,9 +329,11 @@ void CLayerShadowGL::drawSceneObjects(CShaderGL* shader,
 
 void  CLayerShadowGL::setInFrameTexture(shared_ptr<CTextureGL> inFrameTexture)
 {
+	string str;
 	CLayerGL::setInFrameTexture(inFrameTexture);
 	m_inFrameTexture->active(GL_TEXTURE0);
-	m_layerShader->setUnifrom1i(string(RENDERTEX_NAME), m_inFrameTexture->getActiveIndex() - GL_TEXTURE0);
+	str = string(RENDERTEX_NAME);
+	m_layerShader->setUnifrom1i(str, m_inFrameTexture->getActiveIndex() - GL_TEXTURE0);
 }
 
 void CLayerShadowGL::setOrthoParams(float* orthoParams)
@@ -342,16 +353,27 @@ bool CLayerShadowGL::enableCullFront(bool useCullFront)
 	return oldUseCullFront;
 }
 
-void CLayerShadowGL::setBias(GLfloat biasMin, GLfloat biasMax)
+void CLayerShadowGL::setShadowBias(GLfloat biasMin, GLfloat biasMax)
 {
 	m_biasMin = biasMin;
 	m_biasMax = biasMax;
+	string str = string(BIASMIN_NAME);
+	m_layerShader->setUniform1f(str, m_biasMin);
+	m_layerShader->setUniform1f(str, m_biasMax);
+}
+
+void CLayerShadowGL::setShadowBrightness(GLfloat shadowBrightness)
+{
+	m_shadowBrightness = shadowBrightness;
+	string str = string(SHADOWBRIGHTNESS_NAME);
+	m_layerShader->setUniform1f(str, m_shadowBrightness);
 }
 
 void CLayerShadowGL::draw()
 {
 	CMapList<std::shared_ptr<CObject3DGL>>& m_objects = m_scene.getObjects();
 	bool drawed = false;
+	string str;
 	
 	// render on the view of each light
 	for (Light& light : m_scene.getLights())
@@ -367,8 +389,10 @@ void CLayerShadowGL::draw()
 			lightProjection = glm::ortho(m_orthoParams[0], m_orthoParams[1], 
 				m_orthoParams[2], m_orthoParams[3],
 				m_orthoParams[4], m_orthoParams[5]);
-			m_layerShader->setUniformMat4fv(string(LIGHTMATRIX_NAME), glm::value_ptr(lightProjection * lightView));
-			m_layerShader->setUnifrom1i(string(SHADOWMAP2D_NAME), m_depthMap2D->getActiveIndex() - GL_TEXTURE0);
+			str = string(LIGHTMATRIX_NAME);
+			m_layerShader->setUniformMat4fv(str, glm::value_ptr(lightProjection * lightView));
+			str = string(SHADOWMAP2D_NAME);
+			m_layerShader->setUnifrom1i(str, m_depthMap2D->getActiveIndex() - GL_TEXTURE0);
 		}
 		else
 		{
@@ -385,14 +409,19 @@ void CLayerShadowGL::draw()
 				lightProjection = m_scene.getProjection();
 			}
 		}
-		m_depthMapShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(lightView));
-		m_depthMapShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(lightProjection));
-		m_depthMapShader->setUniform4fv(STCFIELDSTRING(LIGHT_NAME, POSITION_NAME), glm::value_ptr(light.position));
-		m_depthMapShader->setUniform1f(STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME), light.cutoff);
-		m_layerShader->setUniform4fv(STCFIELDSTRING(LIGHT_NAME, POSITION_NAME), glm::value_ptr(light.position));
-		m_layerShader->setUniform1f(STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME), light.cutoff);
-		m_layerShader->setUniform1f(string(BIASMIN_NAME), m_biasMin);
-		m_layerShader->setUniform1f(string(BIASMAX_NAME), m_biasMax);
+
+		str = string(VIEW_MATRIX_NAME);
+		m_depthMapShader->setUniformMat4fv(str, glm::value_ptr(lightView));
+		str = string(PROJECTION_MATRIX_NAME);
+		m_depthMapShader->setUniformMat4fv(str, glm::value_ptr(lightProjection));
+		str = STCFIELDSTRING(LIGHT_NAME, POSITION_NAME);
+		m_depthMapShader->setUniform4fv(str, glm::value_ptr(light.position));
+		str = STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME);
+		m_depthMapShader->setUniform1f(str, light.cutoff);
+		str = STCFIELDSTRING(LIGHT_NAME, POSITION_NAME);
+		m_layerShader->setUniform4fv(str, glm::value_ptr(light.position));
+		str = STCFIELDSTRING(LIGHT_NAME, CUTOFF_NAME);
+		m_layerShader->setUniform1f(str, light.cutoff);
 
 		// render shadowmap
 		glBindFramebuffer(GL_FRAMEBUFFER, m_depthMapFBO);
@@ -417,12 +446,10 @@ void CLayerShadowGL::draw()
 			glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear output buffer before use
 		}
-		glClear(GL_DEPTH_BUFFER_BIT);
 		if (beforeDrawLayer())
 		{						
 			drawSceneObjects(m_layerShader.get(), 
 				m_depthMap2D.get(), m_inFrameTexture.get());
-			m_inFrameTexture->unbind();
 			m_depthMap2D->unbind();
 			drawed = true;
 		}
@@ -437,7 +464,7 @@ void CLayerShadowGL::draw()
 		afterDrawLayer(drawed);
 	}
 }
-/*CLayerShadowGL end*/
+/*CLayerShadowGL end*/ 
 
 /*CLayerViewTextureGL start*/
 CLayerDrawTextureGL::CLayerDrawTextureGL(CSceneGL& scene, 
@@ -472,10 +499,13 @@ void CLayerDrawTextureGL::draw()
 		glViewport(m_frameViewport[0], m_frameViewport[1], m_frameViewport[2], m_frameViewport[3]);
 	}
 	if (m_outFBO != -1) glBindFramebuffer(GL_FRAMEBUFFER, m_outFBO);
+	string str;
 	
 	glm::mat4 identity = glm::mat4(1);
-	m_layerShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(identity));
-	m_layerShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(identity));
+	str = string(VIEW_MATRIX_NAME);
+	m_layerShader->setUniformMat4fv(str, glm::value_ptr(identity));
+	str = string(PROJECTION_MATRIX_NAME);
+	m_layerShader->setUniformMat4fv(str, glm::value_ptr(identity));
 	m_viewTexture->active(GL_TEXTURE0);
 	m_viewTexture->bind();
 	if (beforeDrawLayer())
@@ -543,7 +573,8 @@ CLayerHudAttitude::CLayerHudAttitude(CSceneGL& scene,
 	auto mesh = shared_ptr<CMeshGL>(new CMeshGL());
 	mesh->setDrawMode(GL_LINES);
 	mesh->fillVBO(sizeof(vbo_buf), vbo_buf);
-	mesh->fillVAO(vector<GLint>({ 3, 2 }));
+	auto countIndex = vector<GLint>({ 3, 2 });
+	mesh->fillVAO(countIndex);
 	m_attitude = unique_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1), mesh));
 }
 
@@ -557,8 +588,12 @@ void CLayerHudAttitude::drawHud()
 		cerr << "CLayerHudAttitude::drawHud layer shader is NULL" << endl;
 		return;
 	}
-	m_layerShader->setUniformMat4fv(string(VIEW_MATRIX_NAME), glm::value_ptr(view));
-	m_layerShader->setUniformMat4fv(string(PROJECTION_MATRIX_NAME), glm::value_ptr(project));
+	string str;
+
+	str = string(VIEW_MATRIX_NAME);
+	m_layerShader->setUniformMat4fv(str, glm::value_ptr(view));
+	str = string(PROJECTION_MATRIX_NAME);
+	m_layerShader->setUniformMat4fv(str, glm::value_ptr(project));
 	glLineWidth(2.f);
 	m_attitude->draw(0, m_layerShader.get());
 	glLineWidth(1.f);
@@ -593,6 +628,7 @@ void CLayerLightGL::draw()
 {
 	vector<Light>& lights = m_scene.getLights();
 	vector<shared_ptr<CMeshGL>>& meshes = m_lightCubes->getMeshs();
+	string str;
 	for (size_t i = 0; i < lights.size(); i++)
 	{
 		if (!meshes[i]) continue;
@@ -600,7 +636,8 @@ void CLayerLightGL::draw()
 			lights[i].diffuse + lights[i].specular, glm::vec3(0), glm::vec3(1));
 		glm::vec4 color = glm::vec4(blendColor, 1.f);
 		m_lightCubes->setModel(glm::translate(glm::mat4(1), glm::vec3(lights[i].position)));
-		m_layerShader->setUniform4fv(string("color"), glm::value_ptr(color));
+		str = string("color");
+		m_layerShader->setUniform4fv(str, glm::value_ptr(color));
 		meshes[i]->draw(m_lightCubes->getModel(), 0, m_layerShader.get());
 	}
 }

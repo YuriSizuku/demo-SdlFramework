@@ -50,6 +50,10 @@ public:
         // init output texture buffer
         m_outTexture = shared_ptr<CTexture2DGL>(new CTexture2DGL(1280, 720));
         m_outTexture->texImage2D(NULL);
+        m_outTexture->bind();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        m_outTexture->unbind(); 
     }
 
     void initLights()
@@ -62,8 +66,12 @@ public:
         light.ambient = { 1.f, 1.f, 1.f };
         light.specular = { 1.f, 1.f, 1.f };
         light.attenuation = { 1.f ,0.f, 0.f };
-        light.cutoff = glm::radians(0.f); 
+        light.cutoff = glm::radians(0.f);
         light.outerCutoff = glm::radians(0.f);
+
+        Light light12 = light;
+        light12.position = { 0, 1.f, 2.f, 0.f };
+        light12.direction = {0.f, 10.f, -10.f};
         
         // point light
         Light light2 = light;
@@ -78,7 +86,8 @@ public:
         light3.outerCutoff = glm::radians(40.f);
         light2.ambient *= 0.f;
 
-        pushLight(light); 
+        pushLight(light);
+        pushLight(light12);
         //pushLight(light2);
         //pushLight(light3);
     }
@@ -93,20 +102,21 @@ public:
         auto layer_shadow = shared_ptr<CLayerShadowGL>(new CLayerShadowGL(*this, getShaders()["depthmap"], getShaders()["shadow"], 1024, 1024));
         float orthoParams[6] = { -2.f, 2.f, -2.f, 2.f, 0.1f, 5.f };
         layer_shadow->setOrthoParams(orthoParams);
-        layer_shadow->enableCullFront(false);
-        layer_shadow->setBias(0.005f, 0.05f);
+        layer_shadow->enableCullFront(true);
+        layer_shadow->setShadowBias(0.005f, 0.05f);
+        layer_shadow->setShadowBrightness(0.5f);
         
-        // other component
+        // other component 
         auto layer_attitude = shared_ptr<CLayerHudAttitude>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
         auto layer_light = shared_ptr<CLayerLightGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         auto layer_texture = shared_ptr<CLayerDrawTextureGL>(new CLayerDrawTextureGL(*this, getShaders()["draw_texture"], m_outTexture));
            
-        // assemble layers
-        this->pushLayer(layer_phong); 
-        //this->pushLayer(layer_shadow);
+        // assemble layers 
+        this->pushLayer(layer_phong);
+        this->pushLayer(layer_shadow);
         this->pushLayer(layer_attitude); 
-        this->pushLayer(layer_light);  
-        this->pushLayer(layer_texture);
+        this->pushLayer(layer_light);
+        //this->pushLayer(layer_texture); 
     }
 
     void initObjects()
@@ -138,7 +148,7 @@ public:
         planeMesh->setShader(m_shaders[SHADER_DEFAULT]);
         planeMesh->addTexture("misuzu", tex);
         auto planeObject = shared_ptr<CObject3DGL>(new CObject3DGL(model, planeMesh));
-        m_objects.pushObject(planeObject);
+        m_objects.pushObject(planeObject); 
 
         // cube
         model = glm::translate(glm::mat4(1), glm::vec3(0.f, 0.f, 0.f));

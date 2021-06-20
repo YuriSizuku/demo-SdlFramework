@@ -28,7 +28,7 @@ protected:
 
 public:
 	CShaderGL();
-	CShaderGL(string& vertPath, string& fragPath, string& geometryPath = string(""));
+	CShaderGL(string& vertPath, string& fragPath, string geometryPath = string(""));
 	void addShaderFile(string& path, GLenum shaderType);
 	void addShaderSource(string& source, GLenum shaderType);
 	void linkProgram();

@@ -25,7 +25,7 @@ CShaderGL::CShaderGL()
 	glCheckError();
 }
 
-CShaderGL::CShaderGL(string& vertPath, string& fragPath, string& geometryPath) :CShaderGL()
+CShaderGL::CShaderGL(string& vertPath, string& fragPath, string geometryPath) :CShaderGL()
 {
 	if (vertPath != "") addShaderFile(vertPath, GL_VERTEX_SHADER);
 	if (geometryPath != "") addShaderFile(geometryPath, GL_GEOMETRY_SHADER);
@@ -53,7 +53,8 @@ void CShaderGL::addShaderFile(string& path, GLenum shaderType)
 	}
 	char ch;
 	while (source && fin.get(ch)) source.put(ch);
-	addShaderSource(source.str(), shaderType);
+	string str = source.str();
+	addShaderSource(str, shaderType);
 	fin.close();
 }
 
@@ -144,7 +145,8 @@ GLint CShaderGL::setUniform3fv(string& uniformName, GLsizei i, const GLfloat* da
 
 GLint CShaderGL::setUniform3fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data)
 {
-	auto location = getUniformLocation(uniformName + "[" + to_string(i) + "]");
+	string str = uniformName + "[" + to_string(i) + "]";
+	auto location = getUniformLocation(str);
 	glUseProgram(m_programID);
 	glUniform3fv(location, count, data);
 	return location;
@@ -165,7 +167,8 @@ GLint CShaderGL::setUniform4fv(string& uniformName, GLsizei i, const GLfloat* da
 
 GLint CShaderGL::setUniform4fv(string& uniformName, GLsizei i, GLsizei count, const GLfloat* data)
 {
-	auto location = getUniformLocation(uniformName + "[" + to_string(i) + "]");
+	string str = uniformName + "[" + to_string(i) + "]";
+	auto location = getUniformLocation(str);
 	glUseProgram(m_programID);
 	glUniform4fv(location, count, data);
 	return location;
@@ -305,7 +308,7 @@ void CTextureGL::unbind()
 }
 /*CTextureGL end*/
 
-/*CTexture2DGL start*/
+/*CTexture2DGL start*/ 
 CTexture2DGL::CTexture2DGL(GLenum aciveIndex):CTextureGL(GL_TEXTURE_2D, aciveIndex)
 {
 

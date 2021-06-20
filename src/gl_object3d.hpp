@@ -60,7 +60,8 @@ public:
 	// VAO VBO EBO
 	// No need to reserve the CPU memory, just use glBindBuffer and glMapBuffer
 	GLuint getVAO();
-	void fillVAO(vector<GLint>& countIndexs = vector<GLint>({ 3,2,3,3 }));
+	void fillVAO();
+	void fillVAO(vector<GLint>& countIndexs);
 	GLuint getVBO();
 	void fillVBO(GLsizeiptr size, const GLvoid* data, GLenum usage = GL_STATIC_DRAW);
 	GLuint getEBO();
@@ -79,7 +80,7 @@ public:
 	virtual ~CMeshGL();
 	// draw the obejct using the m_shaders, or extern shader
 	// use pfnMeshSetCallback to set the unifroms by the layer
-	virtual void draw(glm::mat4& objectModel = glm::mat4(1),
+	virtual void draw(glm::mat4& objectModel,
 		int shaderIndex = 0, CShaderGL* shader = nullptr, bool useTextures = true, 
 		PFNCMESHGLCB pfnMeshSetCallback=NULL, CSceneGL* scene = NULL, 
 		void* data1=NULL, void* data2=NULL);
@@ -125,7 +126,7 @@ public:
 	CPlaneMeshGL(const glm::mat4& model=glm::mat4(1), 
 		const shared_ptr<CShaderGL> shader = nullptr, 
 		GLenum usage = GL_STATIC_DRAW, 
-		map<int, glm::vec2>& texcoords = map<int, glm::vec2>());
+		map<int, glm::vec2> texcoords=map<int, glm::vec2>());
 };
 
 // a unit cube in the center
@@ -136,7 +137,7 @@ public:
 	CCubeMeshGL(const glm::mat4& model = glm::mat4(1),
 		const shared_ptr<CShaderGL> shader = nullptr,
 		GLenum usage = GL_STATIC_DRAW, 
-		map<int, glm::vec2>& texcoords = map<int, glm::vec2>());
+		map<int, glm::vec2> texcoords = map<int, glm::vec2>());
 };
 
 class CSphereMeshGL:public CMeshGL

@@ -23,7 +23,7 @@ typedef struct Light Light;
 typedef struct MaterialPhong MaterialPhong;
 typedef void (*PFNCOBJECT3DGLCB)(int shaderIndex, CObject3DGL* object, CSceneGL* scene, void* data1, void* data2);
 typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, void* data1, void* data2);
-#define STCFIELDSTRING(STC, FIELD) string(STC##"."##FIELD)
+#define STCFIELDSTRING(STC, FIELD) string(STC) + "." + string(FIELD) // STC##"."##FIELD
 #define STCIFIELDSTRING(STC, INDEX, FIELD) string(STC) +"["+ to_string(INDEX) +"]."+ string(FIELD)
 
 // for light
@@ -54,6 +54,7 @@ typedef void (*PFNCMESHGLCB)(int shaderIndex, CMeshGL* mesh, CSceneGL* scene, vo
 #define SHADOWMAPCUBE_NAME "shadowMapCube"
 #define BIASMIN_NAME "biasMin"
 #define BIASMAX_NAME "biasMax"
+#define SHADOWBRIGHTNESS_NAME "shadowBrightness"
 
 // use multi layer for defered rendering, inFrameTexture -> outFrameTexture
 class CLayerGL
@@ -129,9 +130,10 @@ private:
 	GLuint m_depthMapFBO = -1;
 	bool m_useCullFront = true;
 	GLfloat m_biasMin = 0.f, m_biasMax = 0.f; // bias for Shadow Acne problem
+	GLfloat m_shadowBrightness = 0.2f;
 
 protected: 
-	void CLayerShadowGL::drawSceneObjects(CShaderGL* shader, 
+	void drawSceneObjects(CShaderGL* shader, 
 		CTextureGL* shadowMap, CTextureGL* renderTexture);
 public:
 	CLayerShadowGL(CSceneGL& scene,  shared_ptr<CShaderGL> depthMapShader, 
@@ -141,7 +143,8 @@ public:
 	void setOrthoParams(float *orthoParams);
 	float* getOrthoParmas();
 	bool enableCullFront(bool useCullFront);
-	void setBias(GLfloat biasMin, GLfloat biasMax);
+	void setShadowBias(GLfloat biasMin, GLfloat biasMax);
+	void setShadowBrightness(GLfloat shadowBrightness);
 	virtual ~CLayerShadowGL();
 	virtual void draw();
 };
