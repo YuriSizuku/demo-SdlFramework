@@ -61,6 +61,7 @@ function(config_externlib TARGET_NAME)
             SDL2
             GLEW
             GL
+            GLESv2
             ${CMAKE_DL_LIBS})
     endif()
 endfunction()

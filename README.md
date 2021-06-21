@@ -95,7 +95,7 @@ I use cmake to build the demo.
 
 create `./externlib` folder and put the libraries in here , see  `CMakeLists.txt` in detail.
 
-Use cmake  to generate visual studio sln project. Mingw is not tested.
+Use cmake  to generate visual studio sln project. Mingw is not tested.d
 
 ```cmd
 mkdir build
@@ -106,6 +106,8 @@ mkdir build_x64
 cd build_x64
 cmake .. -G "Visual Studio 14 2015" -A x64
 ```
+
+Integrated graphic card might have some problems with Opengl ES. 
 
 ### (2) Build on Linux: 
 
@@ -124,6 +126,15 @@ mkdir build
 cd build
 cmake ..
 make
+```
+
+In  vmware,  if have any problems, 
+
+try to use `SDL_GL_CONTEXT_PROFILE_CORE`, with the version 3.3,  and these environment
+
+```sh
+export SDL_VIDEO_X11_VISUALID=
+export MESA_GL_VERSION_OVERRIDE=3.3
 ```
 
 

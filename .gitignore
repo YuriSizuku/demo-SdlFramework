@@ -13,4 +13,5 @@ build/*
 build_x64/*
 build_linux/*
 .vs/*
+.vscode/*
 externlib/*
