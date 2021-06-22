@@ -221,7 +221,7 @@ void start()
 int main(int argc, char* argv[])
 {
     start();
-#if(defined(_WIN32) || defined(_DEBUG)) 
+#if(defined(_WIN32) && defined(_DEBUG)) 
     _CrtDumpMemoryLeaks(); // const string will not destruct before main end
 #endif
     return 0;

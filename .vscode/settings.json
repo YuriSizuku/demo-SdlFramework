@@ -1,0 +1,25 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory" : "${workspaceFolder}/build",
+	"cmake.configureArgs" : [
+        "-DCMAKE_C_COMPILER=clang",
+        "-DCMAKE_CXX_COMPILER=clang++",
+        "-DWIN64=OFF",
+        "-DCMAKE_C_FLAGS=-m32",
+        "-DCMAKE_CXX_FLAGS=-m32",
+    ], 
+    "files.associations": {
+        "memory": "cpp",
+        "string": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "xutility": "cpp",
+        "type_traits": "cpp",
+        "unordered_map": "cpp",
+        "xlocmon": "cpp",
+        "xmemory": "cpp",
+        "xtree": "cpp",
+        "system_error": "cpp",
+        "list": "cpp"
+    }
+}

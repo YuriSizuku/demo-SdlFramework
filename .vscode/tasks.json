@@ -1,0 +1,35 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "configure ninja clang(win32)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "${workspaceRoot}/build", 
+                "-G", "Ninja", 
+                "-DCMAKE_C_COMPILER=clang",
+                "-DCMAKE_CXX_COMPILER=clang++",
+                "-DCMAKE_BUILD_TYPE=DEBUG",
+                "-DWIN64=OFF", 
+                "-DCMAKE_CXX_FLAGS=-m32", 
+                "-DCMAKE_C_FLAGS=-m32", 
+            ],
+            "options": {"cwd": "${workspaceRoot}"},
+            "problemMatcher": [],
+        },
+        {
+            "label": "ninja clang build all(win32)",
+            "type": "shell",
+            "command": "ninja && ninja install",
+            "options": {"cwd": "${workspaceRoot}/build"},
+            "dependsOn": "configure ninja clang(win32)",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        }
+    ]
+}

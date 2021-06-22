@@ -9,8 +9,9 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-.vscode/*
 build/*
+build_make/*
+build_ninja/*
 build_win32/*
 build_win64/*
 build_x64/*

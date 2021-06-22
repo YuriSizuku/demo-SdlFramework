@@ -21,7 +21,10 @@ function(config_externlib TARGET_NAME)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         message("adding windows libs to "  ${TARGET_NAME})
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
-        target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem:windows") # for clang on windows
+        if(${CMAKE_C_COMPILER} MATCHES "clang") #can not use directory -DCMAKE_EXE_LINKER_FLAGS, as some example compile test fail
+            message("using clang for compiler!")
+            target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem:windows") 
+        endif()
         if(${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
             set(${WIN64} ON) 
         endif()
