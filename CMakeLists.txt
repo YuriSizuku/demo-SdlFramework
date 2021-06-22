@@ -19,8 +19,13 @@ function(config_externlib TARGET_NAME)
 
     # extern lib
     if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        message("adding windows libs to "  ${TARGET_NAME})
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
-        if (${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
+        target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem:windows") # for clang on windows
+        if(${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
+            set(${WIN64} ON) 
+        endif()
+        if (${WIN64})
             message("adding win64 libs to " ${TARGET_NAME})
             target_link_directories(${TARGET_NAME} PRIVATE
                 ${SDL2_DIR}/lib/x64
@@ -49,11 +54,11 @@ function(config_externlib TARGET_NAME)
         install(FILES 
             ${SDL2_DLL_PATH}
             DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
+
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    # sudo aptitude install libgl1-mesa-dev
-    # sudo aptitude install libglew-dev glew-utils
-    # sudo aptitude install libsdl2-dev
-    # sudo apt install libglm-dev
         message("adding linux libs to "  ${TARGET_NAME})
         target_compile_definitions(${TARGET_NAME} PRIVATE _LINUX)
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)

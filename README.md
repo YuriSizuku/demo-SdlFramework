@@ -79,7 +79,7 @@ Currently the class is as below:
 
 ## 2. build
 
-I use cmake to build the demo.
+I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES. 
 
 ### (1) Build on Windows:  
 
@@ -95,19 +95,29 @@ I use cmake to build the demo.
 
 create `./externlib` folder and put the libraries in here , see  `CMakeLists.txt` in detail.
 
-Use cmake  to generate visual studio sln project. Mingw is not tested.d
-
+**a. For Visual studio sln project**
 ```cmd
-mkdir build
-cd build
+mkdir build_win32
+cd build_win32
 cmake .. -G "Visual Studio 14 2015" -A win32
 cd ..
-mkdir build_x64
+mkdir build_win64
 cd build_x64
 cmake .. -G "Visual Studio 14 2015" -A x64
 ```
 
-Integrated graphic card might have some problems with Opengl ES. 
+**b. For vscode, with clang and ninjia**  
+Install `CMake`, `CMake Tools` extensions at first, then config `.\.vscode\settings.json`, win32 for example
+
+```json
+	"cmake.configureArgs" : [
+        "-DWIN64=OFF",
+        "-DCMAKE_C_FLAGS=-m32",
+        "-DCMAKE_CXX_FLAGS=-m32",
+    ], 
+```
+
+Then press `ctrl+shift+p`, then  `CMake: Select a Kit`, `CMake: Configure`, `CMake: Build`, `CMake: Install`
 
 ### (2) Build on Linux: 
 
