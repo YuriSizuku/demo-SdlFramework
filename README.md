@@ -1,5 +1,7 @@
 # SdlFramework
+
 My simple SDL framework for rendering, updating and event handling.
+This program is also for testing build on multi enviroment and by multi tools, for example msvc, clang, mingw, linux (including raspberripi).
 
 ## 1. Structures
 
@@ -8,7 +10,6 @@ My simple SDL framework for rendering, updating and event handling.
 Currently the class is as below:
 
 **sdl_framework.hpp**
-
 `CAppSDL`:  create window and renderer, contain the global information
 
 `CStageManagerSDL`: manage the game stage, a stage can be a level or menu,  define how to change stage here
@@ -18,7 +19,6 @@ Currently the class is as below:
 `CSceneSDL`: a scene contains many objects and determine how objects interact with each other
 
 **sdl_object2d.hpp**
-
 `CObject2DSDL`: a object used for SDL rendering
 
 `CSingleTextureSDL`:  a object with a texture
@@ -27,8 +27,7 @@ Currently the class is as below:
 
 ### (2) OpenGL part
 
-**gl_scene.hpp** 
-
+**gl_scene.hpp**  
 `Light`: the light information for rendering lighting
 
 `MaterialPhong`: material structure for object with phong rendering
@@ -40,7 +39,6 @@ Currently the class is as below:
 `CSceneGL`:  a scene  contains layers or objects for rendering
 
 **gl_layers.hpp**
-
 `CLayerGL`:  the layer for rendering, for using different shaders or defered rendering
 
 `CLayerShadowGL(not finished)`:  generate the shadow map by every light, point light, direction light
@@ -54,13 +52,11 @@ Currently the class is as below:
 `CLayerLightGL`:  generate a cube in the light position for viewing light
 
 **gl_assets.hpp**
-
 `CShaderGL`: a class of shader manager, for loading shaders, compile, link and use program for rendering
 
 `CTextureGL|2DGL|3DGL|CubeGL(not finished)`:  a class of texture manager, for filling texture of reading from texture
 
 **gl_object3d.hpp**
-
 `CMeshGL`: contains vao, vbo, ebo, textures and shaders for each layer
 
 `CObject3DGL`:  a 3D object for gl rendering, manage multi meshes
@@ -74,14 +70,13 @@ Currently the class is as below:
 ### (3) Physical part
 
 **physics_object.hpp**
-
 `CPhsicalObject`: This object contains physical information, used for physical engine
 
 ## 2. build
 
-I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES. 
+I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES.
 
-### (1) Build on Windows:  
+### (1) Windows MSVC
 
  You need either download each libraries below, or download all the requirement in [externlib](https://github.com/YuriSizuku/SdlFramework/releases/download/v0.1/externlib.7z).
 
@@ -94,8 +89,8 @@ I use cmake to build the demo. Integrated graphic card might have some problems 
 [stb](https://github.com/nothings/stb/archive/refs/heads/master.zip) download and rename  `stb-master` to`stb`
 
 create `./externlib` folder and put the libraries in here , see  `CMakeLists.txt` in detail.
-
 **a. For Visual studio sln project**
+
 ```cmd
 mkdir build_win32
 cd build_win32
@@ -107,23 +102,53 @@ cmake .. -G "Visual Studio 14 2015" -A x64
 ```
 
 **b. For vscode, with clang and ninjia**  
+If you are using clang, using lower version cmake might only recogonize `clang-cl` for linking MSVC lib.
 Install `CMake`, `CMake Tools` extensions at first, then config `.\.vscode\settings.json`, win32 for example
 
 ```json
-	"cmake.configureArgs" : [
-        "-DWIN64=OFF",
-        "-DCMAKE_C_FLAGS=-m32",
-        "-DCMAKE_CXX_FLAGS=-m32",
-    ], 
+"cmake.configureArgs" : [
+    "-DWIN64=OFF",
+    "-DCMAKE_C_FLAGS=-m32",
+    "-DCMAKE_CXX_FLAGS=-m32",
+], 
 ```
 
 Then press `ctrl+shift+p`, then  `CMake: Select a Kit`, `CMake: Configure`, `CMake: Build`, `CMake: Install`
 
-### (2) Build on Linux: 
+### (2)  Windows GNU
+
+install mys2 and enviroment,
+
+```sh
+pacman -Syu --noconfirm
+pacman -S --noconfirm mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb # mingw64 compile tool
+pacman -S --noconfirm mingw-w64-i686-binutils mingw-w64-i686-gcc mingw-w64-i686-gdb # mingw32 compile tool
+pacman -S --noconfirm make # util tools
+pacman -S --noconfirm mingw-w64-i686-SDL2 mingw-w64-x86_64-SDL2
+pacman -S --noconfirm mingw-w64-i686-glew mingw-w64-x86_64-glew
+pacman -S --noconfirm mingw-w64-i686-glm mingw-w64-x86_64-glm
+pacman -S --noconfirm mingw-w64-i686-mesa mingw-w64-x86_64-mesa
+```
+
+Add `mingw32` to system path and `-DWIN64=OFF` to build win64,
+Or Add `mingw64` to system path and `-DWIN64=ON` to build win32.
+For example, use this to build with mingw32:
+
+```cmd
+@echo off
+mkdir %~dp0%\build
+cd %~dp0%\build
+cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DWIN64=OFF
+make all
+make install
+cd ..
+```
+
+### (3) Linux
 
 Install the requirement and then generate Makefile.
 
-```shell
+```sh
 sudo aptitude install libgl1-mesa-dev
 sudo aptitude install libglew-dev glew-utils
 sudo aptitude install libsdl2-dev
@@ -138,7 +163,7 @@ cmake ..
 make
 ```
 
-In  vmware,  if have any problems, 
+In  vmware,  if have any problems,
 
 try to use `SDL_GL_CONTEXT_PROFILE_CORE`, with the version 3.3,  and these environment
 
@@ -146,8 +171,6 @@ try to use `SDL_GL_CONTEXT_PROFILE_CORE`, with the version 3.3,  and these envir
 export SDL_VIDEO_X11_VISUALID=
 export MESA_GL_VERSION_OVERRIDE=3.3
 ```
-
-
 
 ## 3. Demos/Games
 

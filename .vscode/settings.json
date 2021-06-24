@@ -20,6 +20,7 @@
         "xmemory": "cpp",
         "xtree": "cpp",
         "system_error": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "vector": "cpp"
     }
 }

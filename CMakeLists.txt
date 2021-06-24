@@ -1,34 +1,66 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.19.5)
 project(SdlFramework)
+option(WIN64 "link the WIN64 lib" OFF)
+option(MINGW_DIR "configure this to MINGW path to use" OFF) 
 
 function(config_externlib TARGET_NAME)
-    # set extern lib path
+    # extern lib path
     set(EXTERN_LIB_DIR ${PROJECT_SOURCE_DIR}/externlib)
     set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL2-2.0.14)
     set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
     set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
     set(STB_DIR ${EXTERN_LIB_DIR}/stb)
-
-    # extern include
-    target_include_directories(${TARGET_NAME} PRIVATE
-        ${SDL2_DIR}/include
-        ${GLM_DIR}/
-        ${GLEW_DIR}/include
-        ${STB_DIR}
-    )
-
-    # extern lib
-    if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-        message("adding windows libs to "  ${TARGET_NAME})
+    # common extern include path
+    target_include_directories(${TARGET_NAME} PRIVATE ${STB_DIR})
+    
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        message("Linux enviroment for "  ${TARGET_NAME})
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
-        if(${CMAKE_C_COMPILER} MATCHES "clang") #can not use directory -DCMAKE_EXE_LINKER_FLAGS, as some example compile test fail
+        target_compile_definitions(${TARGET_NAME} PRIVATE _LINUX)
+        target_link_libraries(${TARGET_NAME} 
+            SDL2
+            GLEW
+            GL
+            GLESv2
+            ${CMAKE_DL_LIBS})
+    
+    elseif (MINGW) # if using mingw, automaticlly have this
+        message("MINGW enviroment for " ${TARGET_NAME})
+        target_compile_definitions(${TARGET_NAME} PRIVATE 
+            USE_OPENGL
+            _LINUX)
+        target_link_options(${TARGET_NAME} PRIVATE 
+            -static-libgcc   # static link mingw env
+            -static-libstdc++
+            -mwindows) 
+        target_link_libraries(${TARGET_NAME}  # static links
+            -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive 
+            -Wl,-Bstatic 
+            mingw32 
+            SDL2main 
+            SDL2
+            glew32)
+        target_link_libraries(${TARGET_NAME}   # dynamic links
+            -Wl,-Bdynamic
+            dinput8 shell32 setupapi advapi32 uuid version oleaut32 ole32 imm32 winmm gdi32 user32
+            opengl32)
+ 
+    elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
+        message("Windows enviroment for " ${TARGET_NAME})
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
+        target_include_directories(${TARGET_NAME} PRIVATE
+            ${SDL2_DIR}/include
+            ${GLM_DIR}/
+            ${GLEW_DIR}/include)
+
+        if(CMAKE_C_COMPILER MATCHES "clang") #can not use directory -DCMAKE_EXE_LINKER_FLAGS, as some example compile test fail
             message("using clang for compiler!")
             target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem:windows") 
         endif()
-        if(${CMAKE_GENERATOR_PLATFORM} MATCHES "x64")
-            set(${WIN64} ON) 
+        if(CMAKE_GENERATOR_PLATFORM MATCHES "x64")
+            set(WIN64 ON) 
         endif()
-        if (${WIN64})
+        if (WIN64)
             message("adding win64 libs to " ${TARGET_NAME})
             target_link_directories(${TARGET_NAME} PRIVATE
                 ${SDL2_DIR}/lib/x64
@@ -51,27 +83,17 @@ function(config_externlib TARGET_NAME)
             SDL2main.lib
             glew32s.lib
             opengl32.lib)
-        install(FILES 
-            ${SDL2_DLL_PATH}
-            DESTINATION ${CMAKE_BINARY_DIR}/Release)
-        install(FILES 
-            ${SDL2_DLL_PATH}
-            DESTINATION ${CMAKE_BINARY_DIR}/Debug)
-        install(FILES 
-            ${SDL2_DLL_PATH}
-            DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
-
-    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        message("adding linux libs to "  ${TARGET_NAME})
-        target_compile_definitions(${TARGET_NAME} PRIVATE _LINUX)
-        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
-        target_link_libraries(${TARGET_NAME} 
-            SDL2
-            GLEW
-            GL
-            GLESv2
-            ${CMAKE_DL_LIBS})
     endif()
+    
+    install(FILES 
+        ${SDL2_DLL_PATH}
+        DESTINATION ${CMAKE_BINARY_DIR}/Release)
+    install(FILES 
+        ${SDL2_DLL_PATH}
+        DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    install(FILES 
+        ${SDL2_DLL_PATH}
+        DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
 endfunction()
 
 function(copy_assets TARGET_NAME)

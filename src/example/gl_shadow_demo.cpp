@@ -201,8 +201,8 @@ void start()
 {
     string title = "gl shadow"; 
     CAppSDL app;
-    app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); // intergrated graphic card might not be compatible with GLES
-    //app.prepareGL(0, 3, 3, SDL_GL_CONTEXT_PROFILE_CORE); // linux, export MESA_GL_VERSION_OVERRIDE=3.3
+    //app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); // intergrated graphic card might not be compatible with GLES
+    app.prepareGL(0, 3, 3, SDL_GL_CONTEXT_PROFILE_CORE); // linux, export MESA_GL_VERSION_OVERRIDE=3.3
     app.enableGL(true);
     app.prepareWindow(title, 1280, 720);
 

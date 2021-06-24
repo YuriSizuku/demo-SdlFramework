@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#define GLEW_STATIC
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

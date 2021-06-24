@@ -3,6 +3,7 @@
 #define _GL_ASSETS_H
 #include <vector>
 #include <string>
+#define GLEW_STATIC
 #include <GL/glew.h>
 using std::vector;
 using std::string;

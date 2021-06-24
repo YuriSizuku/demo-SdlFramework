@@ -15,9 +15,28 @@
             "environment": [],
             "console": "externalTerminal",
         },
-        
         {
-            "name": "lldb launch (Windows)",
+            "name": "cppdbg GDB launch (Windows)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "cppdbg GDB launch (Windows) start!",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "LLDB launch (Windows)",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
