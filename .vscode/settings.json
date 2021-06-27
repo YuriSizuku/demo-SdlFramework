@@ -22,5 +22,6 @@
         "system_error": "cpp",
         "list": "cpp",
         "vector": "cpp"
-    }
+    },
+    "outline.showConstants": false
 }

@@ -22,7 +22,7 @@
             "program": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceRoot}/build",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -43,6 +43,60 @@
             "args": [],
             "cwd": "${workspaceRoot}/build",
             "relativePathBase": "${workspaceRoot}/build"
+        },
+        {
+            "name": "native Debug GDB lanuch (Windows)",
+            "type": "gdb",
+            "request": "launch",
+            "target": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
+            "cwd": "${workspaceRoot}/build",
+            "valuesFormatting": "parseText"
+        },
+        {
+            "name": "cppdbg GDB launch (Rpi arm32 linux remote)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build_cross/${fileBasenameNoExtension}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "arm-linux-gnueabihf-gdb",
+            "miDebuggerServerAddress": "raspberrypi.local:2345",
+            "cwd": "${workspaceRoot}/build_cross",
+            "setupCommands": [
+                {
+                    "description": "for pretty pringting",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "native Debug gdbserver Attach (Rpi arm32 linux remote)",
+            "type": "gdb",
+            "request": "attach",
+            "gdbpath": "arm-linux-gnueabihf-gdb",
+            "executable": "${workspaceRoot}/build_cross/${fileBasenameNoExtension}",
+            "target": "raspberrypi.local:2345",
+            "remote": true,
+            "cwd": "${workspaceRoot}/build_cross",
+            "valuesFormatting": "parseText",
+        },
+        {
+            "name": "native Debug gdbserver Attach (SSH+X11 remote)",
+            "type": "gdb",
+            "gdbpath": "arm-linux-gnueabihf-gdb",
+            "request": "launch",
+            "target": "${fileBasenameNoExtension}",
+            "cwd": "${workspaceRoot}/build_cross/}",
+            "ssh": {
+                "host": "raspberrypi",
+                "cwd": "/home/pi/Downloads/SdlFramework/build_cross",
+                "password": "password",
+                "user": "pi",
+                "forwardX11": true,
+                "x11host": "localhost",
+                "x11port": 6011
+            },
+            "valuesFormatting": "parseText"
         },
     ]
 }

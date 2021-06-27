@@ -20,10 +20,10 @@
                 "_WIN32"
             ],
             "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "D:/AppExtend/LLVM/bin/clang.exe",
+            "compilerPath": "D:/AppExtend/msys2/mingw32/bin/gcc.exe",
             "cStandard": "c99",
             "cppStandard": "c++11",
-            "intelliSenseMode": "windows-clang-x86",
+            "intelliSenseMode": "windows-gcc-x86",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerArgs": [
                 "-m32"

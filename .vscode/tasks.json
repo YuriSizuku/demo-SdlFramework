@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "configure ninja clang(win32)",
+            "label": "configure ninja clang (win32 Debug)",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -21,15 +21,58 @@
             "problemMatcher": [],
         },
         {
-            "label": "ninja clang build all(win32)",
+            "label": "configure ninja aarch32rpi cross gcc (win32 Debug)",
             "type": "shell",
-            "command": "ninja && ninja install",
+            "command": "cmake",
+            "args": [
+                "-B", "${workspaceRoot}/build_cross", 
+                "-G", "Ninja", 
+                "-DCMAKE_BUILD_TYPE=DEBUG",
+                "-DCMAKE_SYSROOT=//raspberrypi/chroot",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceRoot}/aarch32rpi_toolchain.cmake"
+            ],
+            "options": {"cwd": "${workspaceRoot}"},
+            "problemMatcher": [],
+        },
+        {
+            "label": "ninja clang build all (win32 Debug)",
+            "type": "shell",
+            "command": "ninja && ninja install",           
             "options": {"cwd": "${workspaceRoot}/build"},
-            "dependsOn": "configure ninja clang(win32)",
+            "dependsOn": ["configure ninja clang (win32 Debug)"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+        },
+        {
+            "label": "ninja aarch32rpi cross gcc build all (win32 Debug)",
+            "type": "shell",
+            "command": "ninja && ninja install",
+            "options": {"cwd": "${workspaceRoot}/build_cross"},
+            "dependsOn": ["configure ninja aarch32rpi cross gcc (win32 Debug)"],
+            "group": "build"
+        },
+        {
+            "label": "copy build_cross to raspberry",
+            "type": "shell",
+            "command":"cp",
+            "args": ["-rf", "${workspaceRoot}/build_cross", "//raspberrypi/pi/Downloads/SdlFrameWork/"],
+            "group": "none"
+        },
+        {
+            "label": "remote gdbserver start (rpi)",
+            "type": "shell",
+            "command": "msys2",
+            "args": ["sshpass", "-e", "ssh", 
+                "-Y", "pi@raspberrypi", 
+                "gdbserver", ":2345", "/home/pi/Downloads/SdlFramework/build_cross/${fileBasenameNoExtension}"],
+            "options": {"env": 
+                {
+                "DISPLAY":"localhost:11.0", 
+                "SSHPASS":"password"}
+            },
+            "group": "build"
         }
     ]
 }

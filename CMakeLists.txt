@@ -15,8 +15,9 @@ function(config_externlib TARGET_NAME)
     
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         message("Linux enviroment for "  ${TARGET_NAME})
-        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
-        target_compile_definitions(${TARGET_NAME} PRIVATE _LINUX)
+        target_compile_definitions(${TARGET_NAME} PRIVATE 
+            USE_OPENGL
+            _LINUX)
         target_link_libraries(${TARGET_NAME} 
             SDL2
             GLEW
@@ -36,13 +37,14 @@ function(config_externlib TARGET_NAME)
         target_link_libraries(${TARGET_NAME}  # static links
             -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive 
             -Wl,-Bstatic 
+            glew32
             mingw32 
             SDL2main 
-            SDL2
-            glew32)
+            SDL2)
         target_link_libraries(${TARGET_NAME}   # dynamic links
             -Wl,-Bdynamic
-            dinput8 shell32 setupapi advapi32 uuid version oleaut32 ole32 imm32 winmm gdi32 user32
+            dinput8 shell32 setupapi advapi32 uuid version oleaut32 ole32 
+            imm32 winmm gdi32 user32
             opengl32)
  
     elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")

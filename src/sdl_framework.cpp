@@ -381,7 +381,6 @@ void CAppSDL::createGLContext()
 		}
 #endif
 		SDL_GL_SwapWindow(m_window);
-		glGetError();
 	}
 }
 

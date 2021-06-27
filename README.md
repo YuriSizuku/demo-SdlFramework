@@ -1,6 +1,6 @@
 # SdlFramework
 
-My simple SDL framework for rendering, updating and event handling.
+My simple SDL framework for rendering, updating and event handling.  
 This program is also for testing build on multi enviroment and by multi tools, for example msvc, clang, mingw, linux (including raspberripi).
 
 ## 1. Structures
@@ -38,7 +38,7 @@ Currently the class is as below:
 
 `CSceneGL`:  a scene  contains layers or objects for rendering
 
-**gl_layers.hpp**
+**gl_layers.hpp**  
 `CLayerGL`:  the layer for rendering, for using different shaders or defered rendering
 
 `CLayerShadowGL(not finished)`:  generate the shadow map by every light, point light, direction light
@@ -51,12 +51,12 @@ Currently the class is as below:
 
 `CLayerLightGL`:  generate a cube in the light position for viewing light
 
-**gl_assets.hpp**
+**gl_assets.hpp**  
 `CShaderGL`: a class of shader manager, for loading shaders, compile, link and use program for rendering
 
 `CTextureGL|2DGL|3DGL|CubeGL(not finished)`:  a class of texture manager, for filling texture of reading from texture
 
-**gl_object3d.hpp**
+**gl_object3d.hpp**  
 `CMeshGL`: contains vao, vbo, ebo, textures and shaders for each layer
 
 `CObject3DGL`:  a 3D object for gl rendering, manage multi meshes
@@ -69,7 +69,7 @@ Currently the class is as below:
 
 ### (3) Physical part
 
-**physics_object.hpp**
+**physics_object.hpp**  
 `CPhsicalObject`: This object contains physical information, used for physical engine
 
 ## 2. build
@@ -172,6 +172,49 @@ export SDL_VIDEO_X11_VISUALID=
 export MESA_GL_VERSION_OVERRIDE=3.3
 ```
 
+### (4) windows cross compile arm elf for raspberripi
+
+Install [arm-linux-gnueabihf-gcc](https://gnutoolchains.com/raspberry/) cross compile tool at first.  
+Then you can use `samba`, or read the tf card from card reader.  
+
+If using `samba`, the config in `/etc/smaba/smb.conf` is as below to allow visit symbol link.  
+
+```conf
+[global]
+    follow symlinks = yes 
+    unix extensions = no
+    wide links = yes  
+    min protocol = NT1 
+    aio read size = 0 # improve writing speed
+
+[chroot] 
+    comment = the root dir for raspberripi
+    path = /
+    follow symlinks = yes
+    wide links = yes
+    guest ok = no
+    browseable = yes
+```
+
+Using the cmd as below to cross build arm32 elf
+  
+``` bat
+@echo off
+:: your raspberrypi root dir
+set SYSROOT=//raspberrypi/chroot
+
+mkdir %~dp0%\build_cross
+cd %~dp0%\build_cross
+
+cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER_FORCED=ON -DCMAKE_CXX_COMPILER_FORCED=ON -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ -DCMAKE_C_FLAGS="--sysroot=%SYSROOT%" -DCMAKE_CXX_FLAGS="--sysroot=%SYSROOT%" -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath=//usr/lib/arm-linux-gnueabihf/:/opt/vc/lib/"
+
+make all
+make install
+cd ..
+```
+
+As for running in raspberry pi, see `3. (4) gl shadow test` in detail.  
+　　
 ## 3. Demos/Games
 
 ### (1) circle collision
@@ -205,3 +248,14 @@ We can explore this scene like a flying game. Press  `wasd` to move the position
 ![gl_phong_test](screenshot/gl_phong_test.png)
 
 ![gl_phong_test2](screenshot/gl_phong_test2.png)
+
+### (4) gl shadow test  
+
+The test of gl_shadow, also it can run in raspberrypi.  
+As for opengl support in raspberry pi, `raspi-config` to set GL2 for desktop to support glew. Then run command `MESA_GL_VERSION_OVERRIDE=3.3 ./gl_shadow_test` to show the demo.  
+
+In xserver wersion,  you can use `VcxSrv` in windows, and without native opengl render config. If there is an error with GLU, try  `export SDL_VIDEO_X11_VISUALID=` and then run `MESA_GL_VERSION_OVERRIDE=3.3 ./gl_shadow_test`.  
+
+![gl_shadow_rpi](screenshot/gl_shadow_rpi.png)
+
+![gl_shadow_rpi_xserver](screenshot/gl_shadow_rpi_xserver.png)
