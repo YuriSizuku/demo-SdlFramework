@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Win_x86",
             "includePath": [
                 "D:/AppExtend/msys2/mingw32/include/c++/10.3.0/bits/",
                 "D:/AppExtend/msys2/mingw32/include/c++/10.3.0/i686-w64-mingw32/",
@@ -25,9 +25,32 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "windows-gcc-x86",
             "configurationProvider": "ms-vscode.cmake-tools",
-            "compilerArgs": [
-                "-m32"
-            ]
+            "compilerArgs": [ "-m32"]
+        },
+        {
+            "name": "Linux_x64",
+            "includePath": [
+                "/usr/include/c++/9",
+                "/usr/include/x86_64-linux-gnu/c++/9",
+                "/usr/include/c++/9/backward",
+                "/usr/lib/gcc/x86_64-linux-gnu/9/include",
+                "/usr/local/include",
+                "/usr/include/x86_64-linux-gnu",
+                "/usr/include",
+                "/usr/include/SDL2/",
+                "${workspaceFolder}/src/",
+                "${workspaceFolder}/externlib/stb/"
+            ],
+            "defines": [
+                "USE_OPENGL",
+                "_LINUX"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.cpptools",
+            "compilerArgs": []
         }
     ],
     "version": 4

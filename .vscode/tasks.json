@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "configure ninja clang (win32 Debug)",
+            "label": "configure win_msvcx86pe_clang_ninja (debug)",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -12,47 +12,101 @@
                 "-G", "Ninja", 
                 "-DCMAKE_C_COMPILER=clang",
                 "-DCMAKE_CXX_COMPILER=clang++",
-                "-DCMAKE_BUILD_TYPE=DEBUG",
+                "-DCMAKE_BUILD_TYPE=Debug",
                 "-DWIN64=OFF", 
                 "-DCMAKE_CXX_FLAGS=-m32", 
                 "-DCMAKE_C_FLAGS=-m32", 
             ],
             "options": {"cwd": "${workspaceRoot}"},
-            "problemMatcher": [],
+            "problemMatcher": ["$gcc"],
         },
         {
-            "label": "configure ninja aarch32rpi cross gcc (win32 Debug)",
+            "label": "build win_msvcx86pe_clang_ninja (debug)",
             "type": "shell",
-            "command": "cmake",
-            "args": [
-                "-B", "${workspaceRoot}/build_cross", 
-                "-G", "Ninja", 
-                "-DCMAKE_BUILD_TYPE=DEBUG",
-                "-DCMAKE_SYSROOT=//raspberrypi/chroot",
-                "-DCMAKE_TOOLCHAIN_FILE=${workspaceRoot}/aarch32rpi_toolchain.cmake"
-            ],
-            "options": {"cwd": "${workspaceRoot}"},
-            "problemMatcher": [],
-        },
-        {
-            "label": "ninja clang build all (win32 Debug)",
-            "type": "shell",
-            "command": "ninja && ninja install",           
+            "command": "ninja all && ninja install",           
             "options": {"cwd": "${workspaceRoot}/build"},
-            "dependsOn": ["configure ninja clang (win32 Debug)"],
+            "dependsOn": ["configure win_msvcx86pe_clang_ninja (debug)"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
         },
+
         {
-            "label": "ninja aarch32rpi cross gcc build all (win32 Debug)",
+            "label": "configure linux_x86elf_gcc_makefile (debug)",
             "type": "shell",
-            "command": "ninja && ninja install",
-            "options": {"cwd": "${workspaceRoot}/build_cross"},
-            "dependsOn": ["configure ninja aarch32rpi cross gcc (win32 Debug)"],
+            "command": "cmake",
+            "args": [
+                "-B", "${workspaceRoot}/build", 
+                "-G", "Unix Makefiles", 
+                "-DCMAKE_C_COMPILER=gcc",
+                "-DCMAKE_CXX_COMPILER=g++",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_CXX_FLAGS=-m32", 
+                "-DCMAKE_C_FLAGS=-m32", 
+            ],
+            "options": {"cwd": "${workspaceRoot}"},
+            "problemMatcher": ["$gcc"],
+        },
+        {
+            "label": "build linux_x86elf_gcc_makefile (debug)",
+            "type": "shell",
+            "command": "make all && make install",           
+            "options": {"cwd": "${workspaceRoot}/build"},
+            "dependsOn": ["configure linux_x86elf_gcc_makefile (debug)"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+
+
+        {
+            "label": "configure linux_mingwx86pe_gcc_makefile (debug)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "${workspaceRoot}/build", 
+                "-G", "Unix Makefiles", 
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DMINGW_PATH=/d/AppExtend/msys2/mingw32",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceRoot}/linux_mingwx86pe_toolchain.cmake"
+            ],
+            "options": {"cwd": "${workspaceRoot}"},
+            "problemMatcher": ["$gcc"],
+        },
+        {
+            "label": "build linux_mingwx86pe_gcc_makefile (Debug)",
+            "type": "shell",
+            "command": "make && make install",
+            "options": {"cwd": "${workspaceRoot}/build"},
+            "dependsOn": ["configure linux_mingwx86pe_gcc_makefile (debug)"],
             "group": "build"
         },
+
+        {
+            "label": "configure cross_arm32elf_makefile (Debug)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "${workspaceRoot}/build_cross", 
+                "-G", "Unix Makefiles", 
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_SYSROOT=//raspberrypi/rootfs",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceRoot}/cross_arm32elf_toolchain.cmake"
+            ],
+            "options": {"cwd": "${workspaceRoot}"},
+            "problemMatcher": ["$gcc"],
+        },
+        {
+            "label": "build cross_arm32elf_makefile (Debug)",
+            "type": "shell",
+            "command": "make && make install",
+            "options": {"cwd": "${workspaceRoot}/build_cross"},
+            "dependsOn": ["configure cross_arm32elf_makefile (Debug)"],
+            "group": "build"
+        },
+
         {
             "label": "copy build_cross to raspberry",
             "type": "shell",

@@ -10,13 +10,6 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 build/*
-build_cross
-build_make/*
-build_ninja/*
-build_win32/*
-build_win64/*
-build_x64/*
-build_x86/*
-build_linux/*
+build_*/*
 .vs/*
 externlib/*

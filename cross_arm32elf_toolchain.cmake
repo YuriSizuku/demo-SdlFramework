@@ -1,0 +1,13 @@
+# This is a toolchain file for cross compiling rashpberry pi arm32 elf 
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc)
+set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++)
+set(DCMAKE_C_FLAGS "--sysroot=${CMAKE_SYSROOT}")
+set(DCMAKE_CXX_FLAGS "--sysroot=${CMAKE_SYSROOT}")
+message(host systemname: ${CMAKE_HOST_SYSTEM_NAME})
+if(CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
+    set(RPATH_STR "-Wl,-rpath=//usr/lib/arm-linux-gnueabihf/:/opt/vc/lib/")
+else()
+    set(RPATH_STR "-Wl,-rpath-link=/usr/arm-linux-gnueabihf/lib:$SYSROOT/lib/arm-linux-gnueabihf:$SYSROOT/usr/lib/")
+endif() 
+set(CMAKE_EXE_LINKER_FLAGS  "-static-libgcc -static-libstdc++ ${RPATH_STR}")

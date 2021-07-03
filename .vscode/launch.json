@@ -16,7 +16,7 @@
             "console": "externalTerminal",
         },
         {
-            "name": "cppdbg GDB launch (Windows)",
+            "name": "cppdbg GDB launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
@@ -24,7 +24,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/build",
             "environment": [],
-            "externalConsole": false,
+            "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "gdb.exe",
             "setupCommands": [
@@ -32,7 +32,7 @@
                     "description": "cppdbg GDB launch (Windows) start!",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
-                }
+                }, 
             ]
         },
         {
@@ -49,6 +49,36 @@
             "type": "gdb",
             "request": "launch",
             "target": "${workspaceRoot}/build/${fileBasenameNoExtension}.exe",
+            "cwd": "${workspaceRoot}/build",
+            "valuesFormatting": "parseText"
+        },
+        {
+            "name": "cppdbg GDB launch (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/",
+            "environment": [
+                {"name":"DISPLAY", "value": "${env:DWIN}"},
+                {"name":"DISPLAY_NOTWORK", "value": "$(grep nameserver /etc/resolv.conf | sed 's/nameserver //'):11.0"},
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+            ]
+        },
+        {
+            "name": "native Debug GDB lanuch (Linux)",
+            "type": "gdb",
+            "request": "launch",
+            "target": "${workspaceFolder}/build/${fileBasenameNoExtension}",
             "cwd": "${workspaceRoot}/build",
             "valuesFormatting": "parseText"
         },

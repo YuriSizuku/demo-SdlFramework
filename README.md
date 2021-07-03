@@ -74,7 +74,7 @@ Currently the class is as below:
 
 ## 2. build
 
-I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES.
+I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES. See them in /script in detail.  
 
 ### (1) Windows MSVC
 
@@ -149,10 +149,8 @@ cd ..
 Install the requirement and then generate Makefile.
 
 ```sh
-sudo aptitude install libgl1-mesa-dev
-sudo aptitude install libglew-dev glew-utils
-sudo aptitude install libsdl2-dev
-sudo apt install libglm-dev
+sudo apt-get install gcc gdb make cmake git
+sudo apt-get install libsdl2-dev libgl1-mesa-dev libglew-dev libglm-dev
 mkdir externlib
 cd externlib
 git clone https://github.com/nothings/stb.git
@@ -161,6 +159,13 @@ mkdir build
 cd build
 cmake ..
 make
+```
+
+If you want to build for x86 in a x64 linux, install these after you install the x64 libray. 
+```sh
+sudo dpkg --add-architecture i386 
+sudo apt-get install gcc-multilib g++multilib 
+sudo apt-get install libsdl2-dev:i386 libgl1-mesa-dev:i386 libglew-dev:i386
 ```
 
 In  vmware,  if have any problems,
