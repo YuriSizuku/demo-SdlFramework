@@ -1,7 +1,11 @@
 # SdlFramework
 
 My simple SDL framework for rendering, updating and event handling.  
-This program is also for testing build on multi enviroment and by multi tools, for example msvc, clang, mingw, linux (including raspberripi).
+This program is also for testing build on multi enviroment and by multi tools, for example msvc, clang, mingw, linux (including raspberripi), psvita.
+
+![circle_danmaku_psv2](screenshot/circle_danmaku_psv2.png)
+
+![circle_danmaku_psv3](screenshot/circle_danmaku_psv3.png)
 
 ## 1. Structures
 
@@ -138,7 +142,7 @@ For example, use this to build with mingw32:
 @echo off
 mkdir %~dp0%\build
 cd %~dp0%\build
-cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DWIN64=OFF
+cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DWIN64=OFF
 make all
 make install
 cd ..
@@ -161,7 +165,8 @@ cmake ..
 make
 ```
 
-If you want to build for x86 in a x64 linux, install these after you install the x64 libray. 
+If you want to build for x86 in a x64 linux, install these after you install the x64 libray.  
+
 ```sh
 sudo dpkg --add-architecture i386 
 sudo apt-get install gcc-multilib g++multilib 
@@ -177,7 +182,7 @@ export SDL_VIDEO_X11_VISUALID=
 export MESA_GL_VERSION_OVERRIDE=3.3
 ```
 
-### (4) windows cross compile arm elf for raspberripi
+### (4) cross compile for raspberripi
 
 Install [arm-linux-gnueabihf-gcc](https://gnutoolchains.com/raspberry/) cross compile tool at first.  
 Then you can use `samba`, or read the tf card from card reader.  
@@ -219,6 +224,19 @@ cd ..
 ```
 
 As for running in raspberry pi, see `3. (4) gl shadow test` in detail.  
+
+### (5) cross compile for psv
+
+install vitasdk and then use bash to make
+
+```sh
+mkdir build_psv && cd build_psv
+export VITASDK=/d/AppExtend/SDK/psvsdk
+export PATH=$VITASDK/bin:$PATH
+cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake"
+make circle_danmaku.vpk
+curl -T circle_danmaku.vpk ftp://10.2.12.5:1337/ux0:/temp/
+```
 　　
 ## 3. Demos/Games
 
@@ -243,6 +261,8 @@ Press `R` to restart. `WASD` to move, `Space` fire bullet, `JK` rotate
 ![circle_danmaku_linux](screenshot/circle_danmaku_linux.png)
 
 ![circle_danmaku](screenshot/circle_danmaku.gif)
+
+![circle_danmaku_psv](screenshot/circle_danmaku_psv1.jpg)
 
 ### (3) gl phong test
 

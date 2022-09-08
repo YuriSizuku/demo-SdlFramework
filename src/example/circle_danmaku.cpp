@@ -1,10 +1,18 @@
+#ifdef USE_OPENGL
 #define GLEW_STATIC
 #include<GL/glew.h>
+#endif
+
 #ifdef _LINUX
 #include <SDL2/SDL.h>
 #else
 #include <SDL.h>
 #endif
+
+#ifdef _PSV
+#include <SDL2/SDL_ttf.h>
+#endif
+
 #include <iostream>
 #include <math.h>
 #include <time.h>
@@ -21,12 +29,18 @@
 #endif
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 enum CIRCLE_TYPE {
 	PLAYER,
 	ENEMY,
 	BULLENT,
 	HUD,
 };
+
+SDL_GameController * g_controller = NULL;
 
 class CCircleDanmaku :public CSingleTextureSDL, public CPhysicsRagidCircle // the basic circle of the obejct
 {
@@ -35,7 +49,7 @@ private:
 	Uint32 m_destoryInterval;
 public:
 	int m_health = 0; // heath=0 show destory, health<0 delete object
-	int m_ownerType = PLAYER, m_ownerID =0; // the bullet onwer, fire out by player or enemy
+	int m_ownerType = PLAYER, m_ownerID = 0; // the bullet onwer, fire out by player or enemy
 
 	CCircleDanmaku(CAppSDL& appSDL, shared_ptr<SDL_Texture> texture) : CSingleTextureSDL(appSDL, texture)
 	{
@@ -305,23 +319,90 @@ public:
 	// game result
 	void onWin()
 	{
-		char title[100], message[256];
+		char title[100], message[512];
 		int score = dynamic_cast<CCircleHUD*>(m_objects.atObject(0, HUD).get())->m_defeated;
-		SDL_snprintf(title, 100, "You Win!");
-		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
-			"Press R to restart\n"
-			"WASD to move, Space fire bullet, JK rotate", score, (SDL_GetTicks()-m_startTicks)/1000);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
+		SDL_snprintf(title, 100, "Congratuations! You Win!");
+		SDL_snprintf(message, 512, "Your defeated %d enemies, in %d seconds.\n"
+			"Press R|start to restart\n"
+			"WASD|dpad|axis_l to move \n"
+			"JK|XY|axis_r rotate\n"
+			"Space|cicle|shoulder_r to fire bullets\n"
+			"===========================\n"
+			"circle danmaku v1.0, developed by devseed\n"
+			"details in https://github.com/YuriSizuku/SdlFramework",
+			 score, (SDL_GetTicks()-m_startTicks)/1000);
+		waitForConfirm(title, message);
 	}
 	void onLose()
 	{
-		char title[100], message[256];
+		char title[100], message[512];
 		int score = dynamic_cast<CCircleHUD*>(m_objects.atObject(0, HUD).get())->m_defeated;
 		SDL_snprintf(title, 100, "Game Over with score %d",  score);
-		SDL_snprintf(message, 256, "Your defeated %d enemies, in %d seconds.\n"
-			"You need to survive 5min, and defeat all enemies\n"
-			"Press R to restart, WASD to move, Space fire bullet, JK rotate", score, (SDL_GetTicks() - m_startTicks) / 1000);
+		SDL_snprintf(message, 512, "Your defeated %d enemies, in %d seconds.\n"
+			"Press R|start to restart\n"
+			"WASD|dpad|axis_l to move \n"
+			"JK|XY|axis_r rotate\n"
+			"Space|cicle|shoulder_r to fire bullets\n"
+			"===========================\n"
+			"circle danmaku v1.0, developed by devseed\n"
+			"details in https://github.com/YuriSizuku/SdlFramework",
+			 score, (SDL_GetTicks()-m_startTicks)/1000);
+		waitForConfirm(title, message);
+	}
+	void waitForConfirm(char *title, char *message)
+	{
+#ifdef _PSV
+
+		int x=120, y=100;
+		SDL_Renderer *renderer = this->m_appSDL.getRenderer();
+		SDL_RenderClear(renderer);
+		TTF_Font *ttf = TTF_OpenFont("default.ttf", 24);
+		
+		// render title
+		SDL_Surface *title_surface = TTF_RenderText_Solid(ttf, title, {255, 255, 0, 0});
+		SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+		SDL_Rect title_rect = {x, y, title_surface->w, title_surface->h};
+		SDL_RenderCopy(renderer, title_texture, NULL, &title_rect);
+		SDL_FreeSurface(title_surface);
+		SDL_DestroyTexture(title_texture);
+
+		// render message line by line
+		SDL_Surface *message_surface = NULL;
+		SDL_Texture *message_texture = NULL;
+		SDL_Rect message_rect = {x, y+title_rect.h*2, 0, 0};
+		char *token = strtok(message, "\n");
+		while(token) 
+		{
+			message_surface = TTF_RenderText_Solid(ttf, token, {0, 255, 0, 0});
+			message_texture = SDL_CreateTextureFromSurface(renderer, message_surface);
+			message_rect.y += message_rect.h;
+			message_rect.w = message_surface->w;
+			message_rect.h = message_surface->h;
+			SDL_RenderCopy(renderer, message_texture, NULL, &message_rect);
+			SDL_FreeSurface(message_surface);
+			SDL_DestroyTexture(message_texture);
+			token = strtok(NULL, "\n");
+   		}
+		SDL_RenderPresent(renderer);
+
+		while(true)
+		{
+			SDL_Event event;
+			SDL_PollEvent(&event);
+			if(event.type == SDL_CONTROLLERBUTTONDOWN && 
+			   event.cbutton.button == SDL_CONTROLLER_BUTTON_START) break;
+			SDL_Delay(10);
+		}
+		TTF_CloseFont(ttf);
+#else
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, message, m_appSDL.getWindow());
+#endif
+	}
+
+	void reset()
+	{
+		releaseAllObjects();
+		initObjects();
 	}
 	
 	// update status functions
@@ -332,7 +413,8 @@ public:
 		if (currentTicks -m_startTicks>= 300*1000  && m_winFlag==0)
 		{
 			onWin();
-			m_winFlag = 1;
+			reset();
+			return;
 		}
 		bool onLoseFlag = false;
 		if (m_objects.get()[PLAYER].size() <= 0)
@@ -348,7 +430,8 @@ public:
 		if (onLoseFlag && m_winFlag==0)
 		{
 			onLose();
-			m_winFlag = -1;
+			reset();
+			return;
 		}
 
 		// check add enemy
@@ -536,21 +619,22 @@ public:
 		auto eventSDL = static_cast<SDL_Event*>(event);
 		if (eventSDL->type == SDL_QUIT)
 		{
-			m_winFlag ? onWin() : onLose();
+			// m_winFlag ? onWin() : onLose();
 			return;
 		}
-		if (eventSDL->type != SDL_KEYDOWN && eventSDL->type != SDL_KEYUP) return;
-		
+		if (eventSDL->type != SDL_KEYDOWN && eventSDL->type != SDL_KEYUP
+			&& eventSDL->type != SDL_CONTROLLERBUTTONDOWN 
+			&& eventSDL->type != SDL_CONTROLLERBUTTONUP
+			&& eventSDL->type != SDL_CONTROLLERAXISMOTION) return;
 		
 		SDL_Scancode scancode = eventSDL->key.keysym.scancode;
+		Uint8 button = eventSDL->cbutton.button;
+
 		// game restart
-		if (scancode == SDL_SCANCODE_R) 
+		if (scancode == SDL_SCANCODE_R ||  
+			button == SDL_CONTROLLER_BUTTON_START) 
 		{
-			releaseAllObjects();
-#if  defined(_DEBUG) &&  defined(_WIN32)
-		//_CrtDumpMemoryLeaks();
-#endif
-			initObjects();
+			reset();
 			return;
 		}		
 		
@@ -564,52 +648,140 @@ public:
 		}
 	
 		// player control
+		#define DEAD_ZONE 1200
 		int dx = 0, dy = 0;
 		float vx = pPlayer->m_vx, vy = pPlayer->m_vy, dtheta = 0.f;
-		const Uint8* status = SDL_GetKeyboardState(NULL);
-		if (eventSDL->type == SDL_KEYDOWN)
+		if(eventSDL->type == SDL_CONTROLLERAXISMOTION)
 		{
-			// player move start
-			if (scancode == SDL_SCANCODE_W || scancode == SDL_SCANCODE_UP)
-				vy = -m_moveSpeed;
-			if (scancode == SDL_SCANCODE_A || scancode == SDL_SCANCODE_LEFT)
-				vx = -m_moveSpeed;
-			if (scancode == SDL_SCANCODE_S || scancode == SDL_SCANCODE_DOWN)
-				vy = m_moveSpeed;
-			if (scancode == SDL_SCANCODE_D || scancode == SDL_SCANCODE_RIGHT)
-				vx = m_moveSpeed;
-			if (scancode == SDL_SCANCODE_J)
-				dtheta = -m_rotateSpeed;
-			if (scancode == SDL_SCANCODE_K)
-				dtheta = m_rotateSpeed;
-		}
-		if (eventSDL->type == SDL_KEYUP)
-		{
-			// player move end
-			if (!status[SDL_SCANCODE_W] && !status[SDL_SCANCODE_UP] && vy < 0.f)
-				vy = 0.f;
-			if (!status[SDL_SCANCODE_A] && !status[SDL_SCANCODE_LEFT] && vx < 0.f)
-				vx = 0.f;
-			if (!status[SDL_SCANCODE_S] && !status[SDL_SCANCODE_DOWN] && vy > 0.f)
-				vy = 0.f;
-			if (!status[SDL_SCANCODE_D] && !status[SDL_SCANCODE_RIGHT] && vx > 0.f)
-				vx = 0.f;
-			if (!status[SDL_SCANCODE_J] && dtheta < 0.f)
-				dtheta = 0.f;
-			if (!status[SDL_SCANCODE_K] && dtheta > 0.f)
-				dtheta = 0.f;
-		    // fire a bullet
-			if (scancode == SDL_SCANCODE_SPACE)
+			if(eventSDL->caxis.axis == SDL_CONTROLLER_AXIS_LEFTX
+				|| eventSDL->caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)
 			{
-				fireBullet(pPlayer);
+				static Sint16 s_lastx = 0, s_lasty=0;
+				Sint16 x = SDL_GameControllerGetAxis(g_controller, SDL_CONTROLLER_AXIS_LEFTX);
+				Sint16 y = SDL_GameControllerGetAxis(g_controller, SDL_CONTROLLER_AXIS_LEFTY);
+				if (abs(x) >= DEAD_ZONE && abs(y) >= DEAD_ZONE)
+				{
+					float vtheta = atan2(y, x);
+					vx = m_moveSpeed * cos(vtheta);
+					vy = m_moveSpeed * sin(vtheta);
+				}
+				else
+				{	
+					// make sure this has a big change to DEAD_ZONE
+					if(abs(x - s_lastx) > DEAD_ZONE && abs(x) < DEAD_ZONE)
+					{
+						vx = 0;
+					}
+					if(abs(y - s_lasty) > DEAD_ZONE && abs(y) < DEAD_ZONE)
+					{
+						vy = 0;
+					}
+				}
+				s_lastx = x;
+				s_lasty = y;
+				pPlayer->m_vx = vx;
+				pPlayer->m_vy = vy;
+			}
+			if(eventSDL->caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX
+				|| eventSDL->caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
+			{
+				Sint16 x = SDL_GameControllerGetAxis(g_controller, SDL_CONTROLLER_AXIS_RIGHTX);
+				Sint16 y = SDL_GameControllerGetAxis(g_controller, SDL_CONTROLLER_AXIS_RIGHTY);
+				if (abs(x) >= DEAD_ZONE && abs(y) >= DEAD_ZONE)
+				{
+					pPlayer->rotateTo(atan2(y, x));
+				}
 			}
 		}
-		float vtheta = atan2(vy, vx);
-		float v = fabsf(vx) + fabsf(vy) != 0.f ? 1.2f*m_moveSpeed: 0.f;
-		pPlayer->m_vx = v * cos(vtheta);
-		pPlayer->m_vy = v * sin(vtheta);
-		pPlayer->rotateTo(pPlayer->m_theta + dtheta);
+		else
+		{
+			if (eventSDL->type == SDL_KEYDOWN || 
+				eventSDL->type == SDL_CONTROLLERBUTTONDOWN)
+			{
+
+				// player move start
+				if (scancode == SDL_SCANCODE_W || scancode == SDL_SCANCODE_UP
+					|| button == SDL_CONTROLLER_BUTTON_DPAD_UP)
+				{
+					vy = -m_moveSpeed;
+				}
+				if (scancode == SDL_SCANCODE_A || scancode == SDL_SCANCODE_LEFT
+					|| button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+				{
+					vx = -m_moveSpeed;
+				}
+				if (scancode == SDL_SCANCODE_S || scancode == SDL_SCANCODE_DOWN
+					|| button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+				{
+					vy = m_moveSpeed;
+				}
+				if (scancode == SDL_SCANCODE_D || scancode == SDL_SCANCODE_RIGHT
+					|| button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+				{
+					vx = m_moveSpeed;
+				}
+				if (scancode == SDL_SCANCODE_J ||
+					button == SDL_CONTROLLER_BUTTON_X)
+				{
+					dtheta = -m_rotateSpeed;
+				}	
+				if (scancode == SDL_SCANCODE_K || 
+					button == SDL_CONTROLLER_BUTTON_Y)
+				{
+					dtheta = m_rotateSpeed;
+				}	
+			}
+			if (eventSDL->type == SDL_KEYUP || 
+				eventSDL->type == SDL_CONTROLLERBUTTONUP)
+			{
+				// player move end
+				const Uint8* status = SDL_GetKeyboardState(NULL);
+				if (vy < 0.f && !status[SDL_SCANCODE_W] && !status[SDL_SCANCODE_UP] &&
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_DPAD_UP))
+				{
+					vy = 0.f;
+				}
+				if (vx < 0.f && !status[SDL_SCANCODE_A] && !status[SDL_SCANCODE_LEFT] &&
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+				{
+					vx = 0.f;
+				}
+				if (vy > 0.f && !status[SDL_SCANCODE_S] && !status[SDL_SCANCODE_DOWN] &&
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+				{
+					vy = 0.f;
+				}
+				if (vx > 0.f && !status[SDL_SCANCODE_D] && !status[SDL_SCANCODE_RIGHT] && 
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+				{
+					vx = 0.f;
+				}
+				if (dtheta < 0.f && !status[SDL_SCANCODE_J] && 
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
+				{
+					dtheta = 0.f;
+				}
+				if (dtheta > 0.f &&  !status[SDL_SCANCODE_K] && 
+					!SDL_GameControllerGetButton(g_controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
+				{
+					dtheta = 0.f;
+				}
+				// fire a bullet
+				if (scancode == SDL_SCANCODE_SPACE || 
+					button == SDL_CONTROLLER_BUTTON_B ||
+					button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+				{
+					fireBullet(pPlayer);
+				}
+			}
+			float vtheta = atan2(vy, vx);
+			float v = fabsf(vx) + fabsf(vy) != 0.f ? 1.2f*m_moveSpeed: 0.f;
+			pPlayer->m_vx = v * cos(vtheta);
+			pPlayer->m_vy = v * sin(vtheta);
+			pPlayer->rotateTo(pPlayer->m_theta + dtheta);	
+		}
 	}
+
 	void update(Uint32 currentTicks)
 	{
 		Uint32 interval = currentTicks - m_lastUpdateTicks;
@@ -650,7 +822,33 @@ public:
 void start()
 {
 	CAppSDL app;
-	app.prepareWindow("circle danmaku v1.0 by devseed", 800, 600);
+	if (SDL_NumJoysticks())
+	{
+		g_controller = SDL_GameControllerOpen(0);
+	}
+
+#ifdef _PSV
+	app.enableGL(false);
+	app.prepareWindow("circle danmaku psv v1.0 (by devseed)", 960, 544, SDL_WINDOW_SHOWN);
+	if(!g_controller)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_INPUT, "SDL_GameControllerOpen failed!");
+	}
+	if(SDL_GameControllerAddMapping("030000004c0500003713000000000000,PlayStation Vita,a:b1,b:b2,back:b8,dpdown:b13,dpleft:b15,dpright:b14,dpup:b12,leftshoulder:b4,leftx:a0,lefty:a1,rightshoulder:b5,rightx:a3,righty:a4,start:b9,x:b0,y:b3,platform:Windows") < 1)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_INPUT, "SDL_GameControllerAddMapping, %s", SDL_GetError());
+	}
+	else
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_INPUT, "can not found joystick");
+	}
+	if(TTF_Init() < 0)
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_RENDER, "can not init ttf");
+	}
+#else
+	app.prepareWindow("circle danmaku v1.0 (by devseed)", 800, 600);
+#endif
 
 	// using the stage and scene after preparing the window
 	auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
@@ -674,5 +872,7 @@ int main(int argc, char* argv[])
 	_CrtDumpMemoryLeaks();
 #endif
 #endif
+	if(g_controller) SDL_GameControllerClose(g_controller);
+	SDL_Quit();
 	return 0;
 }

@@ -10,6 +10,7 @@ function(config_externlib TARGET_NAME)
     set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
     set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
     set(STB_DIR ${EXTERN_LIB_DIR}/stb)
+    
     # common extern include path
     target_include_directories(${TARGET_NAME} PRIVATE ${STB_DIR})
     
@@ -25,7 +26,7 @@ function(config_externlib TARGET_NAME)
             GLEW
             GLU 
             GL)
-    
+
     elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
         if (MINGW) # if using mingw, automaticlly have this
             message("MINGW enviroment for " ${TARGET_NAME})
@@ -35,7 +36,11 @@ function(config_externlib TARGET_NAME)
             target_link_options(${TARGET_NAME} PRIVATE 
                 -static-libgcc   # static link mingw env
                 -static-libstdc++) 
-            if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+            if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+                message("generating debug configuration")
+                target_compile_options(${TARGET_NAME} PRIVATE -g)
+                target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem,console") 
+            else()
                 target_link_options(${TARGET_NAME} PRIVATE -mwindows) # -mwindows will not have console
             endif()
             target_link_libraries(${TARGET_NAME}  # static links
@@ -94,16 +99,70 @@ function(config_externlib TARGET_NAME)
                 glew32s.lib
                 opengl32.lib)
         endif()
-    
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/Release)
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/Debug)
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Release)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
+
+    elseif(CMAKE_TOOLCHAIN_FILE MATCHES "vita")
+        message("PSV enviroment for "  ${TARGET_NAME} 
+            ", titleid=" ${VITA_TITLEID} 
+            ", version=" ${VITA_VERSION})
+        include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
+        set(VITA_APP_NAME ${TARGET_NAME})
+        if(NOT DEFINED VITA_TITLEID) 
+            set(VITA_TITLEID  "DEVAPP001")
+        endif()
+        if(NOT DEFINED VITA_VERSION)
+            set(VITA_VERSION  "01.00")
+        endif()
+        target_include_directories(${TARGET_NAME} PRIVATE
+            $ENV{VITASDK}/share/gcc-arm-vita-eabi/samples/common
+        )
+        target_compile_definitions(${TARGET_NAME} PRIVATE 
+            _LINUX
+            _PSV
+        )
+        target_link_libraries(${TARGET_NAME}
+            stdc++
+            SDL2_ttf
+            freetype
+            png
+            z
+            c
+            SDL2 # must have these functions under SDL2
+            SceGxm_stub
+            SceDisplay_stub
+            SceCtrl_stub
+            SceAppMgr_stub
+            SceAppUtil_stub
+            SceAudio_stub
+            SceAudioIn_stub
+            SceSysmodule_stub
+            SceIofilemgr_stub
+            SceCommonDialog_stub
+            SceTouch_stub
+            SceHid_stub
+            SceMotion_stub
+            ScePower_stub
+            SceProcessmgr_stub
+            m
+        )
+        vita_create_self(${TARGET_NAME}.self ${TARGET_NAME})
+        vita_create_vpk(${TARGET_NAME}.vpk ${VITA_TITLEID} ${TARGET_NAME}.self
+            VERSION ${VITA_VERSION}
+            NAME ${VITA_APP_NAME}
+            FILE assets/psv_icon.png sce_sys/icon0.png
+            FILE assets/psv_bg.png sce_sys/livearea/contents/bg.png
+            FILE assets/psv_startup.png sce_sys/livearea/contents/startup.png
+            FILE assets/psv_template.xml sce_sys/livearea/contents/template.xml
+            FILE assets/default.ttf default.ttf
+        )
     endif()
 endfunction()
 
@@ -173,6 +232,8 @@ add_executable(${DEMO_NAME}
     ${SDL_FRAMEWORK_CODE})
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
+set(VITA_TITLEID "DEVAPP001")
+set(VITA_VERSION "01.00")
 config_externlib(${DEMO_NAME})
 
 # gl pbong test
@@ -183,6 +244,8 @@ add_executable(${DEMO_NAME}
     ${GL_FRAMEWORK_CODE})
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
+set(VITA_TITLEID "DEVAPP002")
+set(VITA_VERSION "01.00")
 config_externlib(${DEMO_NAME})
 copy_assets(${DEMO_NAME})
 
@@ -194,5 +257,7 @@ add_executable(${DEMO_NAME}
     ${GL_FRAMEWORK_CODE})
 target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
+set(VITA_TITLEID "DEVAPP003")
+set(VITA_VERSION "01.00")
 config_externlib(${DEMO_NAME})
 copy_assets(${DEMO_NAME})

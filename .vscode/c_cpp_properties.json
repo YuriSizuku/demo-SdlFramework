@@ -1,12 +1,16 @@
 {
+    "env": {
+        "mingw32": "D:/AppExtend/EVAPORATE/msys2/mingw32",
+        "vitasdk": "D:/AppExtend/SDK/psvsdk"
+    },
     "configurations": [
         {
             "name": "Win_x86",
             "includePath": [
-                "D:/AppExtend/msys2/mingw32/include/c++/10.3.0/bits/",
-                "D:/AppExtend/msys2/mingw32/include/c++/10.3.0/i686-w64-mingw32/",
-                "D:/AppExtend/msys2/mingw32/include/c++/10.3.0/",
-                "D:/AppExtend/msys2/mingw32/i686-w64-mingw32/include/",
+                "${mingw32}/include/c++/10.3.0/bits/",
+                "${mingw32}/include/c++/10.3.0/i686-w64-mingw32/",
+                "${mingw32}/include/c++/10.3.0/",
+                "${mingw32}/i686-w64-mingw32/include/",
                 "${workspaceFolder}/src/",
                 "${workspaceFolder}/externlib/SDL2-2.0.14/include/",
                 "${workspaceFolder}/externlib/glm-0.9.9/",
@@ -19,8 +23,7 @@
                 "USE_OPENGL",
                 "_WIN32"
             ],
-            "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "D:/AppExtend/msys2/mingw32/bin/gcc.exe",
+            "compilerPath": "${mingw32}/bin/gcc.exe",
             "cStandard": "c99",
             "cppStandard": "c++11",
             "intelliSenseMode": "windows-gcc-x86",
@@ -50,6 +53,25 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.cpptools",
+            "compilerArgs": []
+        },
+        {
+            "name": "PSV",
+            "includePath": [
+                "${vitasdk}/include/**",
+                "${vitasdk}/arm-vita-eabi/include/**",
+                "${vitasdk}/share/**",
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/externlib/stb/**"
+            ],
+            "defines": [
+                "_PSV",
+                "_LINUX"
+            ],
+            "compilerPath": "${vitasdk}/bin/arm-vita-eabi-gcc.exe",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "linux-gcc-arm",
             "compilerArgs": []
         }
     ],
