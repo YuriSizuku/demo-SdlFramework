@@ -9,10 +9,15 @@
 #include <memory>
 #include <vector>
 #include <string>
-#define GLEW_STATIC
-#include <GL/glew.h>
+#ifdef _PSV
+	#include <vitaGL.h>
+#else
+	#define GLEW_STATIC
+	#include <GL/glew.h>
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp> 
 #include <glm/trigonometric.hpp>
 #include "data_types.hpp"
 #include "gl_layers.hpp"

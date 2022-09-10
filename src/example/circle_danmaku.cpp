@@ -1,6 +1,10 @@
 #ifdef USE_OPENGL
+#ifdef _PSV
+#include <vitaGL.h>
+#else
 #define GLEW_STATIC
 #include<GL/glew.h>
+#endif
 #endif
 
 #ifdef _LINUX
@@ -631,8 +635,9 @@ public:
 		Uint8 button = eventSDL->cbutton.button;
 
 		// game restart
-		if (scancode == SDL_SCANCODE_R ||  
-			button == SDL_CONTROLLER_BUTTON_START) 
+		if ((eventSDL->type == SDL_KEYDOWN && scancode == SDL_SCANCODE_R)
+			 || (eventSDL->type==SDL_CONTROLLERBUTTONDOWN 
+			 	&& button == SDL_CONTROLLER_BUTTON_START))
 		{
 			reset();
 			return;
@@ -826,10 +831,15 @@ void start()
 	{
 		g_controller = SDL_GameControllerOpen(0);
 	}
-
+	SDL_WindowFlags window_flag = SDL_WINDOW_SHOWN;
 #ifdef _PSV
-	app.enableGL(false);
-	app.prepareWindow("circle danmaku psv v1.0 (by devseed)", 960, 544, SDL_WINDOW_SHOWN);
+#ifdef USE_OPENGL
+	window_flag = SDL_WINDOW_OPENGL;
+	vglInitExtended(0, 960, 544, 0x800000, SCE_GXM_MULTISAMPLE_NONE);
+	app.prepareGL(0, 2, 0, SDL_GL_CONTEXT_PROFILE_ES);
+	app.enableGL(true);
+#endif
+	app.prepareWindow("circle danmaku psv v1.0 (by devseed)", 960, 544, window_flag);
 	if(!g_controller)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_INPUT, "SDL_GameControllerOpen failed!");

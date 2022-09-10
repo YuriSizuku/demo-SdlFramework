@@ -3,8 +3,12 @@
 #define _GL_ASSETS_H
 #include <vector>
 #include <string>
-#define GLEW_STATIC
-#include <GL/glew.h>
+#ifdef _PSV
+	#include <vitaGL.h>
+#else
+	#define GLEW_STATIC
+	#include <GL/glew.h>
+#endif
 using std::vector;
 using std::string;
 

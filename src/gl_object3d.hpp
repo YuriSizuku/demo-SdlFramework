@@ -5,10 +5,15 @@
 #include <vector>
 #include <map>
 #include <string>
-#define GLEW_STATIC
-#include <GL/glew.h>
+#ifdef _PSV
+	#include <vitaGL.h>
+#else
+	#define GLEW_STATIC
+	#include <GL/glew.h>
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp> 
 #include "gl_assets.hpp"
 #include "gl_scene.hpp"
 using std::shared_ptr;

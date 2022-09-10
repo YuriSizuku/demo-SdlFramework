@@ -372,6 +372,11 @@ void CAppSDL::createGLContext()
 	if (m_window && m_glContext==NULL)
 	{
 		m_glContext = SDL_GL_CreateContext(m_window);
+#ifdef _PSV
+#ifdef USE_OPENGL
+	vglInit(0x800000);
+#endif
+#else
 #ifdef __GLEW_H__
 		GLenum glewError = glewInit(); // if using glew, must glew init, or c++ error will occured
 		if (glewError != GLEW_OK)
@@ -379,6 +384,7 @@ void CAppSDL::createGLContext()
 			SDL_LogError(SDL_LOG_CATEGORY_ASSERT,
 				"Error initializing GLEW! %s\n", glewGetErrorString(glewError));
 		}
+#endif
 #endif
 		SDL_GL_SwapWindow(m_window);
 	}

@@ -66,7 +66,8 @@
             ],
             "defines": [
                 "_PSV",
-                "_LINUX"
+                "_LINUX",
+                "USE_OPENGL"
             ],
             "compilerPath": "${vitasdk}/bin/arm-vita-eabi-gcc.exe",
             "cStandard": "c99",

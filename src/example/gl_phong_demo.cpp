@@ -26,9 +26,13 @@ public:
 
     void initShaders()
     {
+#ifdef _PSV
+        addShader("debug_light");
+#else
         addShader("debug_normal");
         addShader("debug_attitude");
         addShader("debug_light");
+#endif
     }
 
     void initLights()
@@ -65,12 +69,15 @@ public:
     void initLayers()
     {
         auto layer = shared_ptr<CLayerGL>(new CLayerPhongGL(*this));
-        auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
-        auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
-        auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         this->pushLayer(layer);
-       // this->pushLayer(layer_normal);
+#ifdef _PSV
+#else
+        auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
+        // this->pushLayer(layer_normal);
+        auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
         this->pushLayer(layer_attitude);
+#endif
+        auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         this->pushLayer(layer_light); 
     }
 
@@ -163,10 +170,16 @@ void start()
 {
     string title = "gl phong";
     CAppSDL app;
+#ifdef _PSV
+    app.prepareGL(0, 2, 0, SDL_GL_CONTEXT_PROFILE_ES);
+    app.enableGL(true);
+    app.prepareWindow(title, 960, 544);
+#else
     //app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); // intergrated graphic card might not be compatible with GLES, also raspberry pi have some problem in this mode
     app.prepareGL(0, 3, 3, SDL_GL_CONTEXT_PROFILE_CORE);  //linux, export MESA_GL_VERSION_OVERRIDE=3.3
     app.enableGL(true);
     app.prepareWindow(title, 1280, 720);
+#endif 
 
     auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
     auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));

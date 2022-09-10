@@ -25,7 +25,9 @@ GLenum _glCheckError(const char* file, int line)
 		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
 		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
 		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
 		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+#endif
 		}
 		std::cout << error << " | " << file << " (" << line << ")" << std::endl;
 	}
@@ -67,6 +69,7 @@ glm::vec3 CalcNormal(const glm::vec3& edge1, glm::vec3& edge2)
 /*CSceneGL start*/
 CSceneGL::CSceneGL()
 {
+	// cout << "CSceneGL::CSceneGL() start" <<endl;
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
@@ -74,8 +77,11 @@ CSceneGL::CSceneGL()
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
+#ifdef GL_MULTISAMPLE
 	glEnable(GL_MULTISAMPLE);
+#endif
 	glCheckError();
+	// cout << "CSceneGL::CSceneGL() end" <<endl;
 }
 
 CSceneGL::CSceneGL(string shaderName, string shaderDir) :CSceneGL()

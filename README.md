@@ -227,7 +227,7 @@ As for running in raspberry pi, see `3. (4) gl shadow test` in detail.
 
 ### (5) cross compile for psv
 
-install vitasdk and then use bash to make
+install vitasdk and then use bash to make, see `cross_psv_makefile.sh` in detail
 
 ```sh
 mkdir build_psv && cd build_psv

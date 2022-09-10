@@ -12,6 +12,7 @@ using std::to_string;
 using std::ios;
 using std::cerr;
 using std::endl;
+using std::cout;
 
 /*CShaderGL start*/
 CShaderGL::CShaderGL()
@@ -28,7 +29,9 @@ CShaderGL::CShaderGL()
 CShaderGL::CShaderGL(string& vertPath, string& fragPath, string geometryPath) :CShaderGL()
 {
 	if (vertPath != "") addShaderFile(vertPath, GL_VERTEX_SHADER);
+#ifdef GL_GEOMETRY_SHADER
 	if (geometryPath != "") addShaderFile(geometryPath, GL_GEOMETRY_SHADER);
+#endif
 	if (fragPath != "") addShaderFile(fragPath, GL_FRAGMENT_SHADER);
 	linkProgram();
 }
@@ -106,12 +109,16 @@ GLint CShaderGL::getUniformLocation(string& uniformName)
 
 GLint CShaderGL::getUniformBlockIndex(string& uniformName)
 {
+#ifdef _PSV
+	return -1;
+#else
 	auto location = glGetUniformBlockIndex(m_programID, uniformName.c_str());
 	if (location == -1)
 	{
 		cerr << "ERROR CShaderGL::getUniformBlockIndex uniform \"" << uniformName << "\" not found!" << endl;
 	}
 	return location;
+#endif
 }
 
 GLint CShaderGL::setUnifrom1i(string& uniformName, GLint i0)
@@ -186,6 +193,7 @@ GLuint CShaderGL::setUniformBlock(string& uniformName,
 	GLintptr offset, GLsizei size, const void* data)
 	// should glDeleteBuffer after draw
 {
+#ifdef GL_UNIFORM_BUFFER
 	glUseProgram(m_programID);
 	GLuint block = -1;
 	glGenBuffers(1, &block);
@@ -199,6 +207,8 @@ GLuint CShaderGL::setUniformBlock(string& uniformName,
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	return block;
+#endif
+	return -1;
 }
 
 void CShaderGL::use()
@@ -248,33 +258,52 @@ GLenum CTextureGL::getActiveIndex()
 
 GLint CTextureGL::getTexLevelParameter(GLint level, GLenum  pname)
 {
+#ifdef _PSV
+	return 0;
+#else	
 	int param;
 	glBindTexture(m_target, m_texture);
 	glGetTexLevelParameteriv(m_target, level, pname, &param);
 	glBindTexture(m_target, 0);
 	return param;
+#endif
 }
 
 GLint CTextureGL::getTexWidth(GLint level)
 {
+#ifdef GL_TEXTURE_WIDTH
 	return getTexLevelParameter(level, GL_TEXTURE_WIDTH);
+#else
+	return 0;
+#endif
 }
 
 GLint CTextureGL::getTexHeight(GLint level)
 {
+#ifdef GL_TEXTURE_HEIGHT
 	return getTexLevelParameter(level, GL_TEXTURE_HEIGHT);
+#else
+	return 0;
+#endif
 }
 
 GLint CTextureGL::getInternalFormat(GLint level)
 {
+#ifdef GL_TEXTURE_INTERNAL_FORMAT
 	return getTexLevelParameter(level, GL_TEXTURE_INTERNAL_FORMAT);
+#else
+	return 0;
+#endif
 }
 
 void CTextureGL::getTexImage(GLint level, GLenum format, GLenum type, void* pixels)
 {
+#ifdef _PSV
+#else
 	glBindTexture(m_target, m_texture);
 	glGetTexImage(m_target, level, format, type, pixels);
 	glBindTexture(m_target, 0);
+#endif
 }
 
 void CTextureGL::texParameteri(GLenum pname, GLint param)

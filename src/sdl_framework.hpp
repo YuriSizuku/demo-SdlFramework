@@ -6,9 +6,13 @@
 #ifndef _SDL_FRAMEWORK_H
 #define _SDL_FRAMEWORK_H
 #ifdef USE_OPENGL
-	#define GLEW_STATIC
-	#include<GL/glew.h>
-	#ifdef _WIN32
+	#ifdef _PSV
+		#include <vitaGL.h>
+	#else
+		#define GLEW_STATIC
+		#include<GL/glew.h>
+		#ifdef _WIN32
+		#endif
 	#endif
 	#include "gl_scene.hpp"
 #endif
