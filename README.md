@@ -1,7 +1,9 @@
 # SdlFramework
 
-My simple SDL framework for rendering, updating and event handling.  
-This program is also for testing build on multi enviroment and by multi tools, for example msvc, clang, mingw, linux (including raspberripi), psvita.
+A simple experiment game engine by `SDL` and `OpenGL`.  
+Tested by multi enviroment : `msvc`, `clang`, `mingw`, `linux (including raspberrypi)`, `psvita` and even `web(emcc)`.
+
+Online game demo: [circle_danmaku](https://blog.schnee.moe/expr/webapps/circle_danmaku.html)
 
 ![circle_danmaku_psv2](screenshot/circle_danmaku_psv2.png)
 
@@ -76,11 +78,11 @@ Currently the class is as below:
 **physics_object.hpp**  
 `CPhsicalObject`: This object contains physical information, used for physical engine
 
-## 2. build
+## 2. Build
 
 I use cmake to build the demo. Integrated graphic card might have some problems with Opengl ES. See them in /script in detail.  
 
-### (1) Windows MSVC
+### (1) local msvc
 
  You need either download each libraries below, or download all the requirement in [externlib](https://github.com/YuriSizuku/SdlFramework/releases/download/v0.1/externlib.7z).
 
@@ -119,9 +121,9 @@ Install `CMake`, `CMake Tools` extensions at first, then config `.\.vscode\setti
 
 Then press `ctrl+shift+p`, then  `CMake: Select a Kit`, `CMake: Configure`, `CMake: Build`, `CMake: Install`
 
-### (2)  Windows GNU
+### (2) local mingw
 
-install mys2 and enviroment,
+install msys2 in windows or mingw in linux (see next part),
 
 ```sh
 pacman -Syu --noconfirm
@@ -134,35 +136,15 @@ pacman -S --noconfirm mingw-w64-i686-glm mingw-w64-x86_64-glm
 pacman -S --noconfirm mingw-w64-i686-mesa mingw-w64-x86_64-mesa
 ```
 
-Add `mingw32` to system path and `-DWIN64=OFF` to build win64,
-Or Add `mingw64` to system path and `-DWIN64=ON` to build win32.
-For example, use this to build with mingw32:
+Use `local_mingw32.sh` or `local_mingw64.sh` to build.
 
-```cmd
-@echo off
-mkdir %~dp0%\build
-cd %~dp0%\build
-cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DWIN64=OFF
-make all
-make install
-cd ..
-```
-
-### (3) Linux
+### (3) local linux
 
 Install the requirement and then generate Makefile.
 
 ```sh
 sudo apt-get install gcc gdb make cmake git
 sudo apt-get install libsdl2-dev libgl1-mesa-dev libglew-dev libglm-dev
-mkdir externlib
-cd externlib
-git clone https://github.com/nothings/stb.git
-cd ..
-mkdir build
-cd build
-cmake ..
-make
 ```
 
 If you want to build for x86 in a x64 linux, install these after you install the x64 libray.  
@@ -173,16 +155,16 @@ sudo apt-get install gcc-multilib g++multilib
 sudo apt-get install libsdl2-dev:i386 libgl1-mesa-dev:i386 libglew-dev:i386
 ```
 
-In  vmware,  if have any problems,
+Use `local_linux32.sh` or `local_linux64.sh` to build.
 
-try to use `SDL_GL_CONTEXT_PROFILE_CORE`, with the version 3.3,  and these environment
+In  vmware,  if have any problems, try to use `SDL_GL_CONTEXT_PROFILE_CORE`, with the version 3.3,  and these environment
 
 ```sh
 export SDL_VIDEO_X11_VISUALID=
 export MESA_GL_VERSION_OVERRIDE=3.3
 ```
 
-### (4) cross compile for raspberripi
+### (4) cross raspberrypi
 
 Install [arm-linux-gnueabihf-gcc](https://gnutoolchains.com/raspberry/) cross compile tool at first.  
 Then you can use `samba`, or read the tf card from card reader.  
@@ -225,9 +207,9 @@ cd ..
 
 As for running in raspberry pi, see `3. (4) gl shadow test` in detail.  
 
-### (5) cross compile for psv
+### (5) cross psv
 
-install vitasdk and then use bash to make, see `cross_psv_makefile.sh` in detail
+Install [vitasdk](https://github.com/vitasdk/vdpm) and then use `cross_psv.sh` to compile. You can also use these commands for uploading vpk to psv.
 
 ```sh
 mkdir build_psv && cd build_psv
@@ -237,6 +219,9 @@ cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolcha
 make circle_danmaku.vpk
 curl -T circle_danmaku.vpk ftp://10.2.12.5:1337/ux0:/temp/
 ```
+
+### (6) cross web
+Install [emsdk](https://github.com/emscripten-core/emsdk) and then use `cross_web.sh` to build.
 　　
 ## 3. Demos/Games
 

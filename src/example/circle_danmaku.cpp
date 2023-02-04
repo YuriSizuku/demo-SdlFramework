@@ -3,11 +3,11 @@
 #include <vitaGL.h>
 #else
 #define GLEW_STATIC
-#include<GL/glew.h>
+#include <GL/glew.h>
 #endif
 #endif
 
-#ifdef _LINUX
+#if defined(_LINUX)
 #include <SDL2/SDL.h>
 #else
 #include <SDL.h>
@@ -24,13 +24,13 @@
 #include "sdl_framework.hpp"
 #include "physics_object.hpp"
 
-#if(defined(_WIN32) || defined(_WIN64))
-#ifdef _DEBUG
-#include <crtdbg.h>
-#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
-#else
+#if defined(_MSC_VER ) && !defined(_DEBUG)
 #pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
 #endif
+
+#if defined(_MSC_VER ) && defined(_DEBUG)
+#include <crtdbg.h>
+#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
 #endif
 
 #ifndef M_PI
@@ -448,7 +448,7 @@ public:
 		SDL_GetWindowSize(m_appSDL.getWindow(), &screenW, &screenH);
 		
 		rand();
-		float rand_ratio = static_cast<float>(rand())/ RAND_MAX;
+		float rand_ratio = static_cast<float>(rand())/ static_cast<float>(RAND_MAX);
 		float time_ratio = 1.f + static_cast<float>(currentTicks - m_startTicks) / (1000.f*60.f);
 		float radio = 1.4f;
 		if (currentTicks - m_startTicks > 1000 * 30 
@@ -462,11 +462,11 @@ public:
 			float x, y, v, vtheta;
 			do
 			{
-				x = static_cast<float>(rand() * (static_cast<float>(screenW) / RAND_MAX));
-				y = static_cast<float>(rand() * (static_cast<float>(screenH) / RAND_MAX));
+				x = static_cast<float>(rand() * (static_cast<float>(screenW) / (float)RAND_MAX));
+				y = static_cast<float>(rand() * (static_cast<float>(screenH) / (float)RAND_MAX));
 			} while (x + y > 5.0f * (m_radiusEnemy + m_radiusPlayer));
-			v = m_moveSpeed * (0.5f + static_cast<float>(rand() * 0.5f / RAND_MAX));
-			vtheta = static_cast<float>(rand() * (2.f * M_PI / RAND_MAX));
+			v = m_moveSpeed * (0.5f + static_cast<float>(rand() * 0.5f / (float)RAND_MAX));
+			vtheta = static_cast<float>(rand() * (2.f * M_PI / (float)RAND_MAX));
 			addEnemy(x, y, v, vtheta);
 		}
 		m_lastAddEnemyTicks = SDL_GetTicks();
@@ -492,7 +492,7 @@ public:
 			p1->move(interval);
 			if (fireFlag)
 			{
-				if(static_cast<float>(rand())/RAND_MAX <= m_enemyFireRate)
+				if(static_cast<float>(rand())/(float)RAND_MAX <= m_enemyFireRate)
 					fireBullet(p1);
 			}
 
@@ -878,7 +878,7 @@ int main(int argc, char* argv[])
 	start();
 #ifdef _DEBUG
 	SDL_Log("game exit");
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__GNUC__)
 	_CrtDumpMemoryLeaks();
 #endif
 #endif

@@ -8,11 +8,13 @@
 #include <iostream>
 #include "sdl_framework.hpp"
 
-#ifdef _WIN32
-#ifdef _DEBUG
+#if defined(_MSC_VER ) && !defined(_DEBUG)
+#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
+
+#if defined(_MSC_VER ) && defined(_DEBUG)
 #include <crtdbg.h>
 #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
-#endif
 #endif
 
 class CSimpleScene :public CSceneSDL
@@ -52,7 +54,7 @@ int main(int argc, char * argv[])
 	app.setFps(60);
 	app.run();
 	SDL_Log("sdl end");
-#if defined(_WIN32) && defined(_DEBUG) 
+#if defined(_WIN32) && defined(_DEBUG) && !defined(__GNUC__) 
 	_CrtCheckMemory();
 #endif
 	return 0;

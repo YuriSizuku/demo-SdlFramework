@@ -1,6 +1,5 @@
 BUILD_PATH=./../build_psv
 CMAKELISTS_PATH=./../
-SYSROOT=
 
 # prepare libs
 if ! [ -d ./../externlib ]; then mkdir ./../externlib; fi
@@ -19,10 +18,12 @@ if ! [ -d ./../externlib/stb ]; then git clone https://github.com/nothings/stb.g
 #     make -C ./../externlib/SDL2_vitagl/build install
 # fi
 
-# generate makefile
-cmake -G "Unix Makefiles" -S $CMAKELISTS_PATH -B $BUILD_PATH \
-    -DCMAKE_SYSTEM_NAME=PSV \
-    -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake"
+# config path
+if  [ -z "$VITASDK" ]; then VITASDK=/d/Software/env/sdk/psvsdk/; fi;
+PATH=$VITASDK/bin:$PATH
 
-# make target
-make -C $BUILD_PATH circle_danmaku.vpk # gl_phong_demo.vpk not supported yet
+# config and build project
+cmake -G "Unix Makefiles" -S $CMAKELISTS_PATH -B $BUILD_PATH \
+    -DCMAKE_TOOLCHAIN_FILE="$VITASDK/share/vita.toolchain.cmake"
+make -C $BUILD_PATH circle_danmaku.vpk ||\
+  make -C $BUILD_PATH circle_danmaku.vpk-vpk  # for cmake higher version

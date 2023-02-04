@@ -39,7 +39,8 @@
         "fstream": "cpp",
         "numeric": "cpp",
         "thread": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "new": "cpp"
     },
     "outline.showConstants": false
 }

@@ -11,5 +11,6 @@ CTestTestfile.cmake
 _deps
 build/*
 build_*/*
+*_tmp
 .vs/*
 externlib/*

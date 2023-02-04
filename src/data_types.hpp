@@ -46,7 +46,7 @@ public:
 			// if not exist, create one
 			list<T> t;
 			m_maplist[type] = t;
-			return t.end();
+			return m_maplist[type].end();
 		}
 
 		int j = 0;

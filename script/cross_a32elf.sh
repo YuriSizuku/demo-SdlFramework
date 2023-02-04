@@ -1,4 +1,4 @@
-BUILD_PATH=./../build_cross_arm32elf
+BUILD_PATH=./../build_a32elf
 CMAKELISTS_PATH=./../
 SYSROOT=
 
@@ -7,16 +7,13 @@ if [ -n "$(uname -a | grep Linux)" ];then
         #sudo mount -t cifs //raspberrypi/rootfs /opt/rasp -o username=pi,password=yourpw,uid=$(id -u),gid=$(id -g),forceuid,forcegid
         SYSROOT=/opt/rasp
     fi
-    PATH_POSTFIX=_linux
     EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -Wl,-rpath-link=/usr/arm-linux-gnueabihf/lib:$SYSROOT/lib/arm-linux-gnueabihf:$SYSROOT/usr/lib/arm-linux-gnueabihf:$SYSROOT/opt/vc/lib"
 else
     if [ -z "$SYSROOT" ]; then
         SYSROOT=//raspberrypi/rootfs # your raspberrypi root dir]
     fi
-    PATH_POSTFIX=_win
     EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -Wl,-rpath-link=$SYSROOT/lib/arm-linux-gnueabihf:$SYSROOT/usr/lib/arm-linux-gnueabihf:$SYSROOT/opt/vc/lib"
 fi
-BUILD_PATH=$BUILD_PATH$PATH_POSTFIX
 
 echo "sysroot=$SYSROOT buildpath=$BUILD_PATH"
 cmake -B $BUILD_PATH -S $CMAKELISTS_PATH \

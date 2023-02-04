@@ -9,6 +9,10 @@ using std::shared_ptr;
 using std::cout;
 using std::endl;
 
+#if defined(_MSC_VER ) && !defined(_DEBUG)
+#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
+
 const char SHADER_DEFAULT[] = "phong";
 const char SHADER_DIR[] = "./assets";
 
@@ -221,7 +225,7 @@ void start()
 int main(int argc, char* argv[])
 {
     start();
-#if(defined(_WIN32) && defined(_DEBUG)) 
+#if defined(_WIN32) && defined(_DEBUG) && !defined(__GNUC__)
     _CrtDumpMemoryLeaks(); // const string will not destruct before main end
 #endif
     return 0;

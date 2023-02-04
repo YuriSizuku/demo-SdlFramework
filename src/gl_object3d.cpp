@@ -337,7 +337,7 @@ CPlaneMeshGL::CPlaneMeshGL(const glm::mat4& model,
 	{
 		if (it.first > 4) continue;
 		memcpy(&vbo_buf[INDEX_COUNT * it.first + TEXCOORD_INDEX],
-			glm::value_ptr(it.second), 3 * sizeof(GLfloat));
+			glm::value_ptr(it.second), 2 * sizeof(GLfloat));
 	}
 
 	GLuint ebo_buf[] = { 0, 1, 2, 2, 3, 0 };

@@ -1,48 +1,35 @@
 {
-    "env": {
-        "mingw32": "D:/AppExtend/EVAPORATE/msys2/mingw32",
-        "vitasdk": "D:/AppExtend/SDK/psvsdk"
+    "env": { // edit your env here
+        "msys2sdk": "D:/Software/env/msys2",
+        "vitasdk": "D:/Software/env/sdk/psvsdk",
+        "emsdk": "D:/software/env/sdk/emsdk"
     },
     "configurations": [
         {
-            "name": "Win_x86",
+            "name": "mingw32",
             "includePath": [
-                "${mingw32}/include/c++/10.3.0/bits/",
-                "${mingw32}/include/c++/10.3.0/i686-w64-mingw32/",
-                "${mingw32}/include/c++/10.3.0/",
-                "${mingw32}/i686-w64-mingw32/include/",
                 "${workspaceFolder}/src/",
-                "${workspaceFolder}/externlib/SDL2-2.0.14/include/",
-                "${workspaceFolder}/externlib/glm-0.9.9/",
-                "${workspaceFolder}/externlib/glew-2.1.0/include/",
                 "${workspaceFolder}/externlib/stb/"
             ],
             "defines": [
                 "UNICODE",
-                "_UNICODE",
+                "_LINUX",
                 "USE_OPENGL",
                 "_WIN32"
             ],
-            "compilerPath": "${mingw32}/bin/gcc.exe",
+            "compilerPath": "${msys2sdk}/mingw32/bin/gcc.exe",
             "cStandard": "c99",
             "cppStandard": "c++11",
             "intelliSenseMode": "windows-gcc-x86",
-            "configurationProvider": "ms-vscode.cmake-tools",
-            "compilerArgs": [ "-m32"]
+            "compilerArgs": [ "-m32" ]
         },
         {
-            "name": "Linux_x64",
+            "name": "Linux64",
             "includePath": [
-                "/usr/include/c++/9",
-                "/usr/include/x86_64-linux-gnu/c++/9",
-                "/usr/include/c++/9/backward",
-                "/usr/lib/gcc/x86_64-linux-gnu/9/include",
-                "/usr/local/include",
-                "/usr/include/x86_64-linux-gnu",
                 "/usr/include",
-                "/usr/include/SDL2/",
                 "${workspaceFolder}/src/",
                 "${workspaceFolder}/externlib/stb/"
+                
             ],
             "defines": [
                 "USE_OPENGL",
@@ -52,11 +39,10 @@
             "cStandard": "c99",
             "cppStandard": "c++11",
             "intelliSenseMode": "linux-gcc-x64",
-            "configurationProvider": "ms-vscode.cpptools",
             "compilerArgs": []
         },
         {
-            "name": "PSV",
+            "name": "Psv",
             "includePath": [
                 "${vitasdk}/include/**",
                 "${vitasdk}/arm-vita-eabi/include/**",
@@ -74,6 +60,23 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "linux-gcc-arm",
             "compilerArgs": []
+        },
+        {
+            "name": "Web",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${emsdk}/upstream/emscripten/system/lib/libcxx/include",
+                "${emsdk}/upstream/emscripten/cache/sysroot/include"
+            ],
+            "defines": [
+                "_WEB",
+                "_LINUX",
+                "_DEBUG"
+            ],
+            "compilerPath": "${emsdk}/upstream/bin/clang",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "linux-clang-x64"
         }
     ],
     "version": 4

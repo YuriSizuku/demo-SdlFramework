@@ -457,6 +457,23 @@ void CAppSDL::render()
 #endif
 }
 
+#ifdef _WEB
+#include <emscripten.h>
+CAppSDL* g_appsdl = NULL;
+void sdl_loop()
+{
+	if(!g_appsdl) return;
+	SDL_Event event;
+	while (SDL_PollEvent(&event))
+	{
+		g_appsdl->handleEvent(event);
+	}
+	g_appsdl->update();
+	g_appsdl->render();
+	g_appsdl->m_lastRenderTicks = SDL_GetTicks();
+}
+#endif
+
 void CAppSDL::run()
 {
 	if (!m_stageManager)
@@ -464,6 +481,10 @@ void CAppSDL::run()
 		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "CAppSDL::run() m_stageManager is NULL");
 		return;
 	}
+#ifdef _WEB
+	g_appsdl = (CAppSDL*)this;
+	emscripten_set_main_loop(sdl_loop, -1, -1);
+#else
 	while (m_appStatus!=APP_STOP)
 	{
 		SDL_Event event;
@@ -486,6 +507,7 @@ void CAppSDL::run()
 		}
 		m_lastRenderTicks = SDL_GetTicks();
 	}
+#endif
 }
 
 bool CAppSDL::enableGL()

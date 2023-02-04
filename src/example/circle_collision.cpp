@@ -10,6 +10,19 @@
 #include <iostream>
 #include "sdl_framework.hpp"
 
+#if defined(_MSC_VER ) && !defined(_DEBUG)
+#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+#endif
+
+#if defined(_MSC_VER ) && defined(_DEBUG)
+#include <crtdbg.h>
+#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
+#endif
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 enum CIRCLE_TYPE{
 	PLAYER,
 	ENEMY,

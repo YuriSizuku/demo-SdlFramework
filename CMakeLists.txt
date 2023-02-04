@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(SdlFramework)
-option(WIN64 "link the WIN64 lib" OFF)
-option(MINGW_DIR "configure this to MINGW path to use" OFF) 
 
 function(config_linux TARGET_NAME)
     message("Linux enviroment for "  ${TARGET_NAME})
@@ -18,20 +16,21 @@ function(config_linux TARGET_NAME)
 endfunction()
 
 function(config_windows TARGET_NAME)
-    if (MINGW) # if using mingw, automaticlly have this
-        message("MINGW enviroment for " ${TARGET_NAME})
+    if(MINGW) # if using mingw, automaticlly have this
+        message("MINGW enviroment for ${TARGET_NAME}, type ${CMAKE_BUILD_TYPE}")
         target_compile_definitions(${TARGET_NAME} PRIVATE 
             USE_OPENGL
             _LINUX)
         target_link_options(${TARGET_NAME} PRIVATE 
             -static-libgcc   # static link mingw env
             -static-libstdc++) 
-        if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+        if(CMAKE_BUILD_TYPE MATCHES "Debug")
             message("generating debug configuration")
+            target_compile_definitions(${TARGET_NAME} PRIVATE _DEBUG)
             target_compile_options(${TARGET_NAME} PRIVATE -g)
             target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem,console") 
         else()
-            target_link_options(${TARGET_NAME} PRIVATE -mwindows) # -mwindows will not have console
+            target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem,windows")
         endif()
         target_link_libraries(${TARGET_NAME}  # static links
             -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive 
@@ -45,10 +44,11 @@ function(config_windows TARGET_NAME)
             -Wl,-Bdynamic
             dinput8 shell32 setupapi advapi32 uuid version oleaut32 ole32 
             imm32 winmm gdi32 user32)
-        find_file(SDL2_DLL_PATH NAMES SDL2.dll)
-        message("use ${SDL2_DLL_PATH}")
 
     else() # msvc, clang-cl
+        set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL2-2.0.14)
+        set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
+        set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
         message("Windows enviroment for " ${TARGET_NAME})
         target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
         target_include_directories(${TARGET_NAME} PRIVATE
@@ -63,42 +63,38 @@ function(config_windows TARGET_NAME)
             else()
                 target_link_options(${TARGET_NAME} PRIVATE "-Wl,-subsystem:windows")
             endif()
-    endif()
+        endif()
 
-    if(CMAKE_GENERATOR_PLATFORM MATCHES "x64")
-        set(WIN64 ON) 
-    endif()
-    if (WIN64)
-        message("adding win64 libs to " ${TARGET_NAME})
-        target_link_directories(${TARGET_NAME} PRIVATE
-            ${SDL2_DIR}/lib/x64
-            ${GLEW_DIR}/lib/Release/x64)
-        set(SDL2_DLL_PATH ${SDL2_DIR}/lib/x64/SDL2.dll)
-        message(${SDL2_DLL_PATH}, ${SDL2_DIR})
+        if(CMAKE_GENERATOR_PLATFORM MATCHES "x64")
+            message("adding win64 libs to " ${TARGET_NAME})
+            target_link_directories(${TARGET_NAME} PRIVATE
+                ${SDL2_DIR}/lib/x64
+                ${GLEW_DIR}/lib/Release/x64)
+            set(SDL2_DLL_PATH ${SDL2_DIR}/lib/x64/SDL2.dll)
+            message(${SDL2_DLL_PATH}, ${SDL2_DIR})
+        else() # x86
+            message("adding win32 libs to "  ${TARGET_NAME})
+            target_link_directories(${TARGET_NAME} PRIVATE
+                ${SDL2_DIR}/lib/x86
+                ${GLEW_DIR}/lib/Release/win32)
+            set(SDL2_DLL_PATH ${SDL2_DIR}/lib/x86/SDL2.dll)
+        endif()
 
-    else() # x86
-        message("adding win32 libs to "  ${TARGET_NAME})
-        target_link_directories(${TARGET_NAME} PRIVATE
-            ${SDL2_DIR}/lib/x86
-            ${GLEW_DIR}/lib/Release/win32)
-        set(SDL2_DLL_PATH ${SDL2_DIR}/lib/x86/SDL2.dll)
+        target_link_libraries(${TARGET_NAME} 
+            SDL2.lib
+            SDL2main.lib
+            glew32s.lib
+            opengl32.lib)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Release)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+        install(FILES 
+            ${SDL2_DLL_PATH}
+            DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
     endif()
-    target_link_libraries(${TARGET_NAME} 
-        SDL2.lib
-        SDL2main.lib
-        glew32s.lib
-        opengl32.lib)
-    endif()
-    
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/Release)
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/Debug)
-    install(FILES 
-        ${SDL2_DLL_PATH}
-        DESTINATION ${CMAKE_BINARY_DIR}/) # for clang with ninja 
 endfunction()
 
 function(config_psv TARGET_NAME)
@@ -181,19 +177,36 @@ function(config_psv TARGET_NAME)
         FILE assets/psv_startup.png sce_sys/livearea/contents/startup.png
         FILE assets/psv_template.xml sce_sys/livearea/contents/template.xml
         FILE assets/default.ttf default.ttf
-    )    
+    )
+endfunction()
+
+function(config_web TARGET_NAME)
+    message("Web enviroment for "  ${TARGET_NAME})
+    # dirty fix for emcc SDL2
+    set(USE_FLAGS "-s USE_SDL=2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
+    set(CMAKE_EXECUTABLE_SUFFIX .js)
+    target_compile_definitions(${TARGET_NAME} PRIVATE 
+        _WEB
+        _LINUX)
+    target_link_libraries(${TARGET_NAME}  # dynamic
+        SDL2
+        GL)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E 
+        copy ${CMAKE_SOURCE_DIR}/src/example/*.html ${CMAKE_BINARY_DIR})
 endfunction()
 
 function(config_platform TARGET_NAME)
     # extern lib path
     set(EXTERN_LIB_DIR ${PROJECT_SOURCE_DIR}/externlib)
-    set(SDL2_DIR ${EXTERN_LIB_DIR}/SDL2-2.0.14)
-    set(GLM_DIR  ${EXTERN_LIB_DIR}/glm-0.9.9)
-    set(GLEW_DIR ${EXTERN_LIB_DIR}/glew-2.1.0)
     set(STB_DIR ${EXTERN_LIB_DIR}/stb)
     
     # common extern include path
     target_include_directories(${TARGET_NAME} PRIVATE ${STB_DIR})
+    message("system ${CMAKE_SYSTEM_NAME}, toolchain ${CMAKE_TOOLCHAIN_FILE}")
     
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         config_linux(${TARGET_NAME})
@@ -201,6 +214,8 @@ function(config_platform TARGET_NAME)
         config_windows(${TARGET_NAME})
     elseif(CMAKE_TOOLCHAIN_FILE MATCHES "vita")
         config_psv(${TARGET_NAME})
+    elseif(CMAKE_SYSTEM_NAME MATCHES "Emscripten")
+        config_web(${TARGET_NAME})
     endif()
 endfunction()
 
@@ -263,7 +278,7 @@ target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 config_platform(${DEMO_NAME})
 
-# danmaku
+# circle danmaku
 set(DEMO_NAME circle_danmaku)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
@@ -274,7 +289,7 @@ set(VITA_TITLEID "DEVAPP001")
 set(VITA_VERSION "01.00")
 config_platform(${DEMO_NAME})
 
-# gl pbong test
+# gl pbong demo
 set(DEMO_NAME gl_phong_demo)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp
@@ -287,7 +302,7 @@ set(VITA_VERSION "01.00")
 config_platform(${DEMO_NAME})
 copy_assets(${DEMO_NAME})
 
-# gl shadow test
+# gl shadow demo
 set(DEMO_NAME gl_shadow_demo)
 add_executable(${DEMO_NAME}
     src/example/${DEMO_NAME}.cpp

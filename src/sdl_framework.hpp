@@ -1,8 +1,8 @@
 /*
    A very simple sdl framework 
-   by devseed
-   v0.1
+   v0.1, developed by devseed
 */
+
 #ifndef _SDL_FRAMEWORK_H
 #define _SDL_FRAMEWORK_H
 #ifdef USE_OPENGL
@@ -16,7 +16,7 @@
 	#endif
 	#include "gl_scene.hpp"
 #endif
-#ifdef _LINUX
+#if defined(_LINUX)
 #include <SDL2/SDL.h>
 #else
 #include <SDL.h>
@@ -32,11 +32,9 @@ using std::string;
 using std::shared_ptr;
 
 #if(defined(_WIN32) || defined(_WIN64))
-#ifdef _DEBUG
+#if(defined(_DEBUG) && !defined(__GNUC__))  
 	#include <crtdbg.h>
 	#define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
-#else
-	#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
 #endif
 #endif
 
@@ -119,6 +117,9 @@ private:
 	Uint32 m_lastRenderTicks = 0;
 	bool m_bOutsideWindow = false;
 protected:
+#ifdef _WEB
+	friend void sdl_loop();
+#endif
 	SDL_Window* m_window = NULL; // for multi window
 	SDL_Renderer* m_renderer = 0;
 	SDL_GLContext m_glContext = {0};
@@ -135,7 +136,6 @@ protected:
 	void update(); // this is for update the pysical status
 	void render();
 public:	
-	
 	// init the app
 	CAppSDL(Uint32 flags= SDL_INIT_EVERYTHING);
 	virtual ~CAppSDL();
