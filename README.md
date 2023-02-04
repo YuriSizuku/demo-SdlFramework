@@ -3,7 +3,7 @@
 A simple experiment game engine by `SDL` and `OpenGL`.  
 Tested by multi enviroment : `msvc`, `clang`, `mingw`, `linux (including raspberrypi)`, `psvita` and even `web(emcc)`.
 
-Online game demo: [circle_danmaku](https://blog.schnee.moe/expr/webapps/circle_danmaku.html)
+Online game demo: [circle_danmaku](https://blog.schnee.moe/static/circle_danmaku.html)
 
 ![circle_danmaku_psv2](screenshot/circle_danmaku_psv2.png)
 
