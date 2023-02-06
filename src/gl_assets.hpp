@@ -3,8 +3,11 @@
 #define _GL_ASSETS_H
 #include <vector>
 #include <string>
-#ifdef _PSV
+#if defined(_PSV)
 	#include <vitaGL.h>
+#elif defined(_WEB)
+	#include <GL/gl.h>
+	#include <GLES3/gl3.h>
 #else
 	#define GLEW_STATIC
 	#include <GL/glew.h>

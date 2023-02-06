@@ -99,19 +99,23 @@ GLuint CShaderGL::getProgram()
 
 GLint CShaderGL::getUniformLocation(string& uniformName)
 {
+#if defined(_PSV)
+	return -1;
+#else // important for rendering scene
 	auto location = glGetUniformLocation(m_programID, uniformName.c_str());
 	if (location == -1)
 	{
 		cerr << "ERROR CShaderGL::getUniformLocation uniform \"" << uniformName << "\" not found!" << endl;
 	}
 	return location;
+#endif
 }
 
 GLint CShaderGL::getUniformBlockIndex(string& uniformName)
 {
-#ifdef _PSV
+#if defined(_PSV)
 	return -1;
-#else
+#else // important for rendering scene
 	auto location = glGetUniformBlockIndex(m_programID, uniformName.c_str());
 	if (location == -1)
 	{
@@ -258,7 +262,7 @@ GLenum CTextureGL::getActiveIndex()
 
 GLint CTextureGL::getTexLevelParameter(GLint level, GLenum  pname)
 {
-#ifdef _PSV
+#if defined(_PSV) || defined(_WEB)
 	return 0;
 #else	
 	int param;
@@ -298,7 +302,7 @@ GLint CTextureGL::getInternalFormat(GLint level)
 
 void CTextureGL::getTexImage(GLint level, GLenum format, GLenum type, void* pixels)
 {
-#ifdef _PSV
+#if defined(_PSV)
 #else
 	glBindTexture(m_target, m_texture);
 	glGetTexImage(m_target, level, format, type, pixels);

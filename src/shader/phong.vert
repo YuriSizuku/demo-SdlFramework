@@ -1,19 +1,19 @@
-#version 330 core
-layout (location=0) in vec3 aPosition;
-layout (location=1) in vec2 aTexcoord;
-layout (location=2) in vec3 aNormal;
-layout (location=3) in vec3 aTangent;
+#version 300 es
+in vec3 aPosition;
+in vec2 aTexcoord;
+in vec3 aNormal;
+in vec3 aTangent;
 
 uniform mat4 model, view, projection;
 
-out VS_OUT{
-    vec3 aPosition;
-    vec2 aTexcoord;
-    vec3 aNormal;
-    vec3 aTangent;
-    vec4 worldPosition; // world pos
-    mat3 worldTBN;
-} vs_out;
+// out VS_OUT{
+out vec3 position;
+out vec2 texcoord;
+out vec3 normal;
+out vec3 tangent;
+out vec4 worldPosition;
+out mat3 worldTBN;
+// } vs_out;
 
 mat3 CalcWorldTBN(mat4 model, vec3 tangent, vec3 normal)
 {
@@ -26,15 +26,15 @@ mat3 CalcWorldTBN(mat4 model, vec3 tangent, vec3 normal)
 
 void main()
 {
-    vs_out.aPosition = aPosition;
-    vs_out.aTexcoord = aTexcoord; 
-    vs_out.aNormal = aNormal; 
-    vs_out.aTangent = aTangent;
+    position = aPosition;
+    texcoord = aTexcoord; 
+    normal = aNormal; 
+    tangent = aTangent;
 
     // calculate worldTBN
-    vs_out.worldTBN = CalcWorldTBN(model, aTangent, aNormal);
+    worldTBN = CalcWorldTBN(model, aTangent, aNormal);
     
     // calculate vertex position
-    vs_out.worldPosition =  model * vec4(aPosition.xyz, 1.f);
-    gl_Position = projection * view * vs_out.worldPosition;
+    worldPosition =  model * vec4(aPosition.xyz, 1.f);
+    gl_Position = projection * view * worldPosition;
 }

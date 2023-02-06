@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>circle_danmaku (developed by devseed)</title>
+        <title>gl_phong_demo (developed by devseed)</title>
     </head>
     <body style="margin: 0 auto; background-color:coral;">
         <canvas id="canvas" oncontextmenu="event.preventDefault()" style="margin: 0 auto; display: block;"></canvas>
@@ -34,13 +34,13 @@
             }
             var Module = {
                 canvas: (()=>{return document.getElementById('canvas');})(),
-                onRuntimeInitialized: () => {scalefull(canvas, 800/600)}
+                onRuntimeInitialized: () => {scalefull(canvas, 1280/720)}
             }
             addEventListener("resize", (event) => {
                 var canvas = document.getElementById('canvas');
-                scalefull(canvas, 800/600);
+                scalefull(canvas, 1280/720);
             });
         </script>
-        <script src="circle_danmaku.js"></script>
+        <script src="gl_phong_demo.js"></script>
     </body>
 </html>

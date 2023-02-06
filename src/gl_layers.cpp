@@ -573,7 +573,7 @@ CLayerHudAttitude::CLayerHudAttitude(CSceneGL& scene,
 	auto mesh = shared_ptr<CMeshGL>(new CMeshGL());
 	mesh->setDrawMode(GL_LINES);
 	mesh->fillVBO(sizeof(vbo_buf), vbo_buf);
-	auto countIndex = vector<GLint>({ 3, 2 });
+	vector<GLint> countIndex = {3, 2};
 	mesh->fillVAO(countIndex);
 	m_attitude = unique_ptr<CObject3DGL>(new CObject3DGL(glm::mat4(1), mesh));
 }

@@ -46,7 +46,7 @@ GLuint CMeshGL::getVAO()
 
 void CMeshGL::fillVAO()
 {
-	auto countIndexes = vector<GLint>({ 3,2,3,3 });
+	vector<GLint> countIndexes = {3,2,3,3};
 	fillVAO(countIndexes);
 }
 

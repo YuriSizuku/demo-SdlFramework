@@ -65,13 +65,15 @@
             "name": "Web",
             "includePath": [
                 "${workspaceFolder}/src/**",
+                "${workspaceFolder}/externlib/stb/**",
+                "${workspaceFolder}/externlib/glm/**",
                 "${emsdk}/upstream/emscripten/system/lib/libcxx/include",
                 "${emsdk}/upstream/emscripten/cache/sysroot/include"
             ],
             "defines": [
                 "_WEB",
                 "_LINUX",
-                "_DEBUG"
+                "USE_OPENGL"
             ],
             "compilerPath": "${emsdk}/upstream/bin/clang",
             "cStandard": "c99",

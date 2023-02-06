@@ -40,7 +40,9 @@
         "numeric": "cpp",
         "thread": "cpp",
         "complex": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "xiosbase": "cpp",
+        "ios": "cpp"
     },
     "outline.showConstants": false
 }

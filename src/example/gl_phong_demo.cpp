@@ -13,6 +13,10 @@ using std::endl;
 #pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
 #endif
 
+#if defined(_WEB)
+#include <emscripten.h>
+#endif
+
 const char SHADER_DEFAULT[] = "phong";
 const char SHADER_DIR[] = "./assets";
 
@@ -30,7 +34,7 @@ public:
 
     void initShaders()
     {
-#ifdef _PSV
+#if defined(_PSV) || defined(_WEB)
         addShader("debug_light");
 #else
         addShader("debug_normal");
@@ -74,15 +78,17 @@ public:
     {
         auto layer = shared_ptr<CLayerGL>(new CLayerPhongGL(*this));
         this->pushLayer(layer);
-#ifdef _PSV
+#if defined(_PSV) || defined(_WEB) 
+        auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
+        this->pushLayer(layer_light); 
 #else
         auto layer_normal = shared_ptr<CLayerGL>(new CLayerGL(*this, getShaders()["debug_normal"]));
         // this->pushLayer(layer_normal);
         auto layer_attitude = shared_ptr<CLayerGL>(new CLayerHudAttitude(*this, getShaders()["debug_attitude"]));
         this->pushLayer(layer_attitude);
-#endif
         auto layer_light = shared_ptr<CLayerGL>(new CLayerLightGL(*this, getShaders()["debug_light"]));
         this->pushLayer(layer_light); 
+#endif
     }
 
     void initObjects()
@@ -172,19 +178,23 @@ public:
 
 void start()
 {
-    string title = "gl phong";
+    string title = "gl phong demo";
     CAppSDL app;
-#ifdef _PSV
+#if defined(_PSV)
     app.prepareGL(0, 2, 0, SDL_GL_CONTEXT_PROFILE_ES);
     app.enableGL(true);
     app.prepareWindow(title, 960, 544);
+#elif defined(_WEB)
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+    SDL_CreateWindowAndRenderer(1280, 720, SDL_WINDOW_OPENGL, &window, &renderer);
+    app.prepareWindow(window, renderer);
+    app.enableGL(true);
 #else
-    //app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); // intergrated graphic card might not be compatible with GLES, also raspberry pi have some problem in this mode
     app.prepareGL(0, 3, 3, SDL_GL_CONTEXT_PROFILE_CORE);  //linux, export MESA_GL_VERSION_OVERRIDE=3.3
     app.enableGL(true);
     app.prepareWindow(title, 1280, 720);
 #endif 
-
     auto stage_manager = shared_ptr<CStageManegerSDL>(new CStageManegerSDL(app));
     auto stage = shared_ptr<CStageSDL>(new CStageSDL(app));
     auto scene = shared_ptr<CSceneGL>(new CSimpleScene());
@@ -194,8 +204,6 @@ void start()
     app.setBackground(0xff, 0xc0, 0xcb);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); 
     //glDisable(GL_CULL_FACE);
-    //app.setBackground(0xff, 0xff, 0xff);
-    //app.setFps(288);
     app.run();
     SDL_Log("%s exit", title.c_str());
 }

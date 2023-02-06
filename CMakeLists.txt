@@ -182,16 +182,22 @@ endfunction()
 
 function(config_web TARGET_NAME)
     message("Web enviroment for "  ${TARGET_NAME})
-    # dirty fix for emcc SDL2
-    set(USE_FLAGS "-s USE_SDL=2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
-    set(CMAKE_EXECUTABLE_SUFFIX .js)
+    
+    # pass flags for emcc
+    set(EMCC_FLAGS "-sUSE_SDL=2 -o ${TARGET_NAME}.js") 
+    if (${TARGET_NAME} MATCHES gl)
+        set(EMCC_FLAGS "${EMCC_FLAGS} -sFULL_ES3 -sMIN_WEBGL_VERSION=2")
+        set(EMCC_FLAGS "${EMCC_FLAGS} -sFORCE_FILESYSTEM --preload-file=${CMAKE_BINARY_DIR}/assets@assets")
+        target_compile_definitions(${TARGET_NAME} PRIVATE USE_OPENGL)
+    endif()
+    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS ${EMCC_FLAGS})
+    
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${PROJECT_SOURCE_DIR}/externlib/glm)
     target_compile_definitions(${TARGET_NAME} PRIVATE 
         _WEB
         _LINUX)
-    target_link_libraries(${TARGET_NAME}  # dynamic
+    target_link_libraries(${TARGET_NAME}
         SDL2
         GL)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
@@ -220,7 +226,7 @@ function(config_platform TARGET_NAME)
 endfunction()
 
 function(copy_assets TARGET_NAME)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} PRE_BUILD
        COMMAND ${CMAKE_COMMAND} -E 
            copy_directory  ${CMAKE_SOURCE_DIR}/src/shader ${CMAKE_BINARY_DIR}/assets
        COMMAND ${CMAKE_COMMAND} -E 
@@ -299,8 +305,8 @@ target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 set(VITA_TITLEID "DEVAPP002")
 set(VITA_VERSION "01.00")
-config_platform(${DEMO_NAME})
 copy_assets(${DEMO_NAME})
+config_platform(${DEMO_NAME})
 
 # gl shadow demo
 set(DEMO_NAME gl_shadow_demo)
@@ -312,5 +318,5 @@ target_include_directories(${DEMO_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src)
 set(VITA_TITLEID "DEVAPP003")
 set(VITA_VERSION "01.00")
-config_platform(${DEMO_NAME})
 copy_assets(${DEMO_NAME})
+config_platform(${DEMO_NAME})

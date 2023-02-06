@@ -330,7 +330,7 @@ public:
 			"Press R|start to restart\n"
 			"WASD|dpad|axis_l to move \n"
 			"JK|XY|axis_r rotate\n"
-			"Space|cicle|shoulder_r to fire bullets\n"
+			"Space|circle|shoulder_r to fire bullets\n"
 			"===========================\n"
 			"circle danmaku v1.0, developed by devseed\n"
 			"details in https://github.com/YuriSizuku/SdlFramework",

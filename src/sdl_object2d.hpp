@@ -1,8 +1,8 @@
 /*
-  simple wrapper of the SDL 2D object
-  developed by devseed
-  v0.1
+simple wrapper of the SDL 2D object
+  v0.1, developed by devseed
 */
+
 #ifndef _SDL_OBJECT2D_H
 #define _SDL_OBJECT2D_H
 #include <memory>
@@ -10,6 +10,10 @@
 #include "physics_object.hpp"
 using std::shared_ptr;
 class CAppSDL;
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 class CObject2DSDL
 {

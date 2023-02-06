@@ -203,7 +203,7 @@ public:
 
 void start()
 {
-    string title = "gl shadow"; 
+    string title = "gl shadow demo"; 
     CAppSDL app;
     //app.prepareGL(0, 3, 2, SDL_GL_CONTEXT_PROFILE_ES); // intergrated graphic card might not be compatible with GLES, also raspberry pi have some problem in this mode
     app.prepareGL(0, 3, 3, SDL_GL_CONTEXT_PROFILE_CORE); // linux, export MESA_GL_VERSION_OVERRIDE=3.3

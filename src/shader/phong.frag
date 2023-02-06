@@ -1,16 +1,16 @@
-#version 330 core
-in VS_OUT{
-    vec3 aPosition;
-    vec2 aTexcoord;
-    vec3 aNormal;
-    vec3 aTangent;
-    vec4 worldPosition;
-    mat3 worldTBN;
-} fs_in;
+#version 300 es
+precision mediump float;
 
-layout (std140) uniform BLOCK1{
-    float other;
-};
+// in VS_OUT{
+in vec3 position;
+in vec2 texcoord;
+in vec3 normal;
+in vec3 tangent;
+in vec4 worldPosition;
+in mat3 worldTBN;
+// } fs_in;
+out vec4 FragColor;
+
 uniform sampler2D defaultTexture;
 uniform vec3 cameraPosition;
 #define MAX_LIGHTS 20
@@ -32,13 +32,12 @@ uniform struct MaterialPhong {
     float alpha;
 }material;
 
-out vec4 FragColor;
-
 vec3 CalcDirectionLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection)
 {
     // Half-Lambert diffuse shading
     vec3 lightDirection = normalize(light.direction);
-    float diff = max(dot(normal, -lightDirection), 0);
+    float diff = 0.f;
+    diff = max(dot(normal, -lightDirection), 0.f);
     // specular shading
     vec3 reflectDirection = reflect(lightDirection, normal);
     float spec = pow(max(dot(-viewDirection, reflectDirection), 0.f),m.shininess);
@@ -53,7 +52,7 @@ vec3 CalcPointLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirectio
 {
     // Half-Lambert diffuse shading
     vec3 lightDirection = normalize(worldPosition - light.position.xyz);
-    float diff = max(dot(normal, -lightDirection), 0);
+    float diff = max(dot(normal, -lightDirection), 0.f);
     // specular Blinn-Phong shading
     vec3 halfDirection = -normalize(lightDirection+viewDirection);
     float spec = pow(max(dot(normal, halfDirection), 0.f), m.shininess); 
@@ -72,7 +71,7 @@ vec3 CalcSpotLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection
 {
     // Half-Lambert diffuse shading
     vec3 lightDirection = normalize(worldPosition - light.position.xyz);
-    float diff = max(dot(normal, -lightDirection), 0);
+    float diff = max(dot(normal, -lightDirection), 0.f);
     // specular Blinn-Phong shading
     vec3 halfDirection = -normalize(lightDirection+viewDirection);
     float spec = pow(max(dot(normal, halfDirection), 0.f), m.shininess);
@@ -93,10 +92,10 @@ vec3 CalcSpotLight(Light light, MaterialPhong m, vec3 normal, vec3 viewDirection
 
 void main()
 {
-    vec3 texcolor = texture(defaultTexture, fs_in.aTexcoord).rgb; 
+    vec3 texcolor = texture(defaultTexture, texcoord).rgb; 
     vec3 outcolor = vec3(0.f);
-    vec3 normal = fs_in.worldTBN[2];
-    vec3 viewDirection = normalize(fs_in.worldPosition.xyz - cameraPosition);
+    vec3 normal = worldTBN[2];
+    vec3 viewDirection = normalize(worldPosition.xyz - cameraPosition);
     MaterialPhong m = material;
     m.ambient *= texcolor;
     m.diffuse *= texcolor;
@@ -108,13 +107,12 @@ void main()
         }
         else if(lights[i].cutoff>0.f) 
         {
-            outcolor += CalcSpotLight(lights[i], m, normal, viewDirection, fs_in.worldPosition.xyz);
+            outcolor += CalcSpotLight(lights[i], m, normal, viewDirection, worldPosition.xyz);
         }
         else
         {
-            outcolor += CalcPointLight(lights[i], m, normal, viewDirection, fs_in.worldPosition.xyz);
+            outcolor += CalcPointLight(lights[i], m, normal, viewDirection, worldPosition.xyz);
         }
     }
-    FragColor = vec4(outcolor, material.alpha);
-    //FragColor = vec4(0.f, 1.f, 1.f, 1.f);
+    FragColor  = vec4(outcolor, material.alpha);
 }

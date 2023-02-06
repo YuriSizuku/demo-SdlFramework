@@ -6,8 +6,10 @@
 #ifndef _SDL_FRAMEWORK_H
 #define _SDL_FRAMEWORK_H
 #ifdef USE_OPENGL
-	#ifdef _PSV
+	#if defined(_PSV)
 		#include <vitaGL.h>
+	#elif defined(_WEB)
+		#include <GLES3/gl3.h>
 	#else
 		#define GLEW_STATIC
 		#include<GL/glew.h>
@@ -117,7 +119,7 @@ private:
 	Uint32 m_lastRenderTicks = 0;
 	bool m_bOutsideWindow = false;
 protected:
-#ifdef _WEB
+#if defined(_WEB)
 	friend void sdl_loop();
 #endif
 	SDL_Window* m_window = NULL; // for multi window

@@ -7,6 +7,8 @@
 #include <string>
 #ifdef _PSV
 	#include <vitaGL.h>
+#elif defined(_WEB)
+	#include <GLES3/gl3.h>
 #else
 	#define GLEW_STATIC
 	#include <GL/glew.h>

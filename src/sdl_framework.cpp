@@ -277,7 +277,10 @@ void CStageManegerSDL::render()
 /*CAppSDL start*/
 CAppSDL::CAppSDL(Uint32 flags)
 {
-	SDL_Init(flags);
+	if(SDL_Init(flags))
+	{
+		SDL_LogError(SDL_LOG_CATEGORY_ASSERT, "SDL_Init error: %s", SDL_GetError());
+	}
 }
 
 CAppSDL::~CAppSDL()
